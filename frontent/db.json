@@ -1,0 +1,687 @@
+{
+  "admin": [
+    {
+      "id": "admin001",
+      "email": "admin@gmail.com",
+      "password": "admin123"
+    }
+  ],
+  "users": [
+    {
+      "id": "76ec",
+      "username": "hashin",
+      "email": "fasalsabah07@gmail.com",
+      "password": "1234",
+      "status": "active",
+      "wishlist": [
+        {
+          "productId": "3",
+          "name": "Black Forest Cake",
+          "price": 900,
+          "image": "/cake/cake3.avif"
+        },
+        {
+          "productId": "1",
+          "name": "Straw Velvet Cake",
+          "price": 800,
+          "image": "/cake/cake1.avif"
+        },
+        {
+          "productId": "8",
+          "name": "Plum Cake",
+          "price": 800,
+          "image": "/cake/cake8.jpg"
+        }
+      ],
+      "cart": [],
+      "address": {
+        "fullName": "hashin",
+        "mobile": "0974511840",
+        "house": "mlpm.andiviitile",
+        "street": "klpm",
+        "city": "vengara",
+        "pincode": "676305",
+        "state": "kerala"
+      },
+      "orders": [
+        {
+          "id": "mogqudin8palnnquanf",
+          "userId": "76ec",
+          "items": [
+            {
+              "id": "2",
+              "name": "Choco Cream Cake",
+              "price": 750,
+              "quantity": 3,
+              "image": "/cake/cake2.avif"
+            },
+            {
+              "id": "6",
+              "name": "Special Chocolate Cake",
+              "price": 650,
+              "quantity": 1,
+              "image": "/cake/cake6.jpg"
+            },
+            {
+              "id": "3",
+              "name": "Black Forest Cake",
+              "price": 900,
+              "quantity": 1,
+              "image": "/cake/cake3.avif"
+            }
+          ],
+          "totalAmount": 3800,
+          "paymentMethod": "upi",
+          "paymentStatus": "completed",
+          "address": {
+            "fullName": "hashin",
+            "mobile": "0974511840",
+            "house": "mlpm.andiviitile",
+            "street": "klpm",
+            "city": "vengara",
+            "pincode": "676305",
+            "state": "kerala"
+          },
+          "date": "2026-04-27T05:15:32.207Z",
+          "status": "success"
+        }
+      ]
+    },
+    {
+      "id": "88b0",
+      "username": "hashin",
+      "email": "aaa@gmail.com",
+      "password": "abcd",
+      "status": "active",
+      "createdAt": "2025-12-10T06:51:45.083Z",
+      "wishlist": [],
+      "cart": [],
+      "address": {
+        "fullName": "hashin",
+        "mobile": "0974511840",
+        "house": "kolappuram",
+        "street": "klpm",
+        "city": "vengara",
+        "pincode": "676305",
+        "state": "kerala"
+      }
+    },
+    {
+      "id": "db9e",
+      "username": "sanu",
+      "email": "sanu@gmail.com",
+      "password": "1234",
+      "status": "active",
+      "createdAt": "2025-12-11T07:55:36.301Z",
+      "cart": [
+        {
+          "id": "3",
+          "name": "Black Forest Cake",
+          "price": 900,
+          "image": "/cake/cake3.avif",
+          "quantity": 1
+        },
+        {
+          "id": "1",
+          "name": "Straw Velvet Cake",
+          "price": 800,
+          "image": "/cake/cake1.avif",
+          "quantity": 1
+        }
+      ],
+      "address": {
+        "fullName": "hashin",
+        "mobile": "0974511840",
+        "house": "kolappuram",
+        "street": "klpm",
+        "city": "vengara",
+        "pincode": "676305",
+        "state": "kerala"
+      }
+    },
+    {
+      "id": "1267",
+      "username": "manhar",
+      "email": "manhar@gmail.com",
+      "password": "1234",
+      "status": "active",
+      "createdAt": "2025-12-12T08:23:40.006Z",
+      "cart": [
+        {
+          "productId": "2",
+          "name": "Choco Cream Cake",
+          "price": 750,
+          "image": "/cake/cake2.avif",
+          "quantity": 1
+        }
+      ],
+      "wishlist": [
+        {
+          "productId": "6",
+          "name": "Special Chocolate Cake",
+          "price": 650,
+          "image": "/cake/cake6.jpg"
+        },
+        {
+          "productId": "15",
+          "name": "Fresh Fruit Cream Cake",
+          "price": 850,
+          "image": "/cake/FreshFruit_CreamCake.webp"
+        }
+      ],
+      "address": {
+        "fullName": "Manhar",
+        "mobile": "0974511840",
+        "house": "kolappuram",
+        "street": "klpm",
+        "city": "vengara",
+        "pincode": "676305",
+        "state": "kerala"
+      },
+      "orders": [
+        {
+          "orderId": "ORD-1767029488646",
+          "items": [
+            {
+              "id": "1",
+              "name": "Straw Velvet Cake",
+              "price": 800,
+              "image": "/cake/cake1.avif",
+              "quantity": 1
+            }
+          ],
+          "total": 800,
+          "createdAt": "2025-12-29T17:31:28.646Z",
+          "status": "success"
+        },
+        {
+          "orderId": "ORD-1767029552741",
+          "items": [
+            {
+              "id": "5",
+              "name": "Creamy Delight",
+              "price": 500,
+              "image": "/cake/cake5.webp",
+              "quantity": 1
+            }
+          ],
+          "total": 500,
+          "createdAt": "2025-12-29T17:32:32.741Z",
+          "status": "success"
+        },
+        {
+          "orderId": "ORD-1767031022538",
+          "items": [
+            {
+              "id": "5",
+              "name": "Creamy Delight",
+              "price": 500,
+              "quantity": 1,
+              "image": "/cake/cake5.webp"
+            },
+            {
+              "id": "2",
+              "name": "Choco Cream Cake",
+              "price": 750,
+              "quantity": 2,
+              "image": "/cake/cake2.avif"
+            }
+          ],
+          "total": 2000,
+          "createdAt": "2025-12-29T17:57:02.538Z",
+          "status": "canceled"
+        },
+        {
+          "orderId": "ORD-1771858969076",
+          "items": [
+            {
+              "id": "3",
+              "name": "Black Forest Cake",
+              "price": 900,
+              "quantity": 4,
+              "image": "/cake/cake3.avif"
+            },
+            {
+              "id": "4",
+              "name": "Party Mix Cake",
+              "price": 900,
+              "quantity": 5,
+              "image": "/cake/cake4.avif"
+            },
+            {
+              "id": "1",
+              "name": "Straw Velvet Cake",
+              "price": 800,
+              "quantity": 1,
+              "image": "/cake/cake1.avif"
+            }
+          ],
+          "total": 8900,
+          "createdAt": "2026-02-23T15:02:49.077Z"
+        },
+        {
+          "orderId": "ORD-1771859087757",
+          "items": [
+            {
+              "id": "7",
+              "name": "Strawberry Delight Cake",
+              "price": 780,
+              "quantity": 1,
+              "image": "/cake/cake7.jpg"
+            }
+          ],
+          "total": 780,
+          "createdAt": "2026-02-23T15:04:47.757Z"
+        }
+      ]
+    },
+    {
+      "id": "8552",
+      "username": "hashin",
+      "email": "beckam222@gmail.com",
+      "password": "1234",
+      "status": "active",
+      "cart": [
+        {
+          "id": "8",
+          "name": "Plum Cake",
+          "price": 800,
+          "image": "/cake/cake8.jpg",
+          "quantity": 2
+        },
+        {
+          "id": "15",
+          "name": "Fresh Fruit Cream Cake",
+          "price": 850,
+          "image": "/cake/FreshFruit_CreamCake.webp",
+          "quantity": 1
+        }
+      ],
+      "wishlist": [
+        {
+          "id": "1",
+          "name": "Straw Velvet Cake",
+          "price": 800,
+          "image": "/cake/cake1.avif"
+        }
+      ],
+      "createdAt": "2026-01-29T08:13:30.352Z"
+    }
+  ],
+  "products": [
+    {
+      "id": "1",
+      "name": "Straw Velvet Cake",
+      "price": 800,
+      "category": "Premium",
+      "description": "Soft strawberry velvet cake layered with rich cream.ggggg",
+      "image": "/cake/cake1.avif",
+      "rating": 4.8
+    },
+    {
+      "id": "2",
+      "name": "Choco Cream Cake",
+      "price": 750,
+      "category": "Classic",
+      "description": "Rich chocolate sponge filled with creamy chocolate frosting.",
+      "image": "/cake/cake2.avif",
+      "rating": 4.5
+    },
+    {
+      "id": "3",
+      "name": "Black Forest Cake",
+      "price": 900,
+      "category": "Premium",
+      "description": "Classic German black forest with cherries and cream.",
+      "image": "/cake/cake3.avif",
+      "rating": 4.9
+    },
+    {
+      "id": "4",
+      "name": "Party Mix Cake",
+      "price": 900,
+      "category": "Party",
+      "description": "Colorful cake perfect for celebrations and birthdays.",
+      "image": "/cake/cake4.avif",
+      "rating": 4.7
+    },
+    {
+      "id": "5",
+      "name": "Creamy Delight",
+      "price": 500,
+      "category": "Classic",
+      "description": "Light and creamy vanilla delicacy.",
+      "image": "/cake/cake5.webp",
+      "rating": 4.3
+    },
+    {
+      "id": "6",
+      "name": "Special Chocolate Cake",
+      "price": 650,
+      "category": "Premium",
+      "description": "Rich chocolate cake topped with dark chocolate glaze.",
+      "image": "/cake/cake6.jpg",
+      "rating": 4.6
+    },
+    {
+      "id": "7",
+      "name": "Strawberry Delight Cake",
+      "price": 780,
+      "category": "Fruit",
+      "description": "Fresh strawberry cake topped with cream frosting.",
+      "image": "/cake/cake7.jpg",
+      "rating": 4.4
+    },
+    {
+      "id": "8",
+      "name": "Plum Cake",
+      "price": 800,
+      "category": "Seasonal",
+      "description": "Traditional plum cake with dry fruits and spices.",
+      "image": "/cake/cake8.jpg",
+      "rating": 4.6
+    },
+    {
+      "id": "9",
+      "name": "Butterscotch Milk Chocolate Cake",
+      "price": 850,
+      "category": "Special",
+      "description": "Creamy butterscotch cake fused with milk chocolate.",
+      "image": "/cake/Butterscotch_MilkChocolateCake.webp",
+      "rating": 4.7
+    },
+    {
+      "id": "10",
+      "name": "Chocolate Strawberry Bento Cake",
+      "price": 950,
+      "category": "Premium",
+      "description": "Mini bento chocolate cake with fresh strawberry topping.",
+      "image": "/cake/Chocolate_StrawberryBentoCake.jpg",
+      "rating": 4.8
+    },
+    {
+      "id": "11",
+      "name": "Dark Chocolate Mousse Cake",
+      "price": 1000,
+      "category": "Premium",
+      "description": "Smooth mousse layered with rich dark chocolate.",
+      "image": "/cake/DarkChocolateMousseCake.webp",
+      "rating": 4.9
+    },
+    {
+      "id": "12",
+      "name": "Dutch Truffle Cake Half KG",
+      "price": 800,
+      "category": "Premium",
+      "description": "Chocolate truffle cake with silky ganache.",
+      "image": "/cake/DutchTruffleCakehalfkg.webp",
+      "rating": 4.7
+    },
+    {
+      "id": "13",
+      "name": "Eggless Dutch Truffle Cake Half KG",
+      "price": 780,
+      "category": "Eggless",
+      "description": "Completely eggless chocolate truffle cake.",
+      "image": "/cake/EgglessDutchTruffleCakehalfkg.webp",
+      "rating": 4.6
+    },
+    {
+      "id": "14",
+      "name": "Eggless Dutch Truffle Cake 1 KG",
+      "price": 1200,
+      "category": "Eggless",
+      "description": "Large eggless truffle cake perfect for parties.",
+      "image": "/cake/EgglessDutchTruffleCakeonekg.webp",
+      "rating": 4.8
+    },
+    {
+      "id": "15",
+      "name": "Fresh Fruit Cream Cake",
+      "price": 850,
+      "category": "Fruit",
+      "description": "Seasonal mixed fruits layered over fresh cream.",
+      "image": "/cake/FreshFruit_CreamCake.webp",
+      "rating": 4.7
+    },
+    {
+      "id": "16",
+      "name": "Blueberry Cheesecake",
+      "price": 900,
+      "category": "Cheesecake",
+      "description": "Creamy New York cheesecake topped with blueberry compote.",
+      "image": "/cake/HIGHRESBlueberryCheesecake-Square.webp",
+      "rating": 4.8
+    },
+    {
+      "id": "17",
+      "name": "New York Cheesecake",
+      "price": 950,
+      "category": "Cheesecake",
+      "description": "Classic New York style cheesecake with rich flavour.",
+      "image": "/cake/NewYorkCheeseCake1.webp",
+      "rating": 4.9
+    },
+    {
+      "id": "18",
+      "name": "Red Velvet Cake",
+      "price": 850,
+      "category": "Premium",
+      "description": "Moist red velvet cake with smooth cream cheese frosting.",
+      "image": "/cake/RedVelvetCakehalfkg.jpg",
+      "rating": 4.8
+    },
+    {
+      "id": "19",
+      "name": "Strawberry Custard Cake",
+      "price": 750,
+      "category": "Fruit",
+      "description": "Fresh strawberry and creamy custard combination.",
+      "image": "/cake/StrawberryCustardCake.webp",
+      "rating": 4.5
+    },
+    {
+      "id": "1765347746304",
+      "name": "Chocolate Cake",
+      "price": 600,
+      "category": "classic",
+      "description": "a sweet, baked dessert made from flour, sugar, eggs, and fat",
+      "image": "https://theovenchef.com/wp-content/uploads/2023/08/WhatsApp-Image-2023-11-01-at-5.39.28-PM-1-scaled-e1698841246352.jpeg",
+      "rating": 4.5
+    },
+    {
+      "id": "1765358023709",
+      "name": "Peanut Cake",
+      "price": 1200,
+      "category": "Premium",
+      "description": "English Pound CakeA cake is a sweet, baked dessert made from flour, sugar, eggs, and fat,",
+      "image": "https://theoven.in/wp-content/uploads/2023/02/Choco-Vanilla.png",
+      "rating": 4.5
+    }
+  ],
+  "orders": [
+    {
+      "id": "b60b",
+      "userId": "1267",
+      "items": [
+        {
+          "id": "1",
+          "name": "Straw Velvet Cake",
+          "price": 800,
+          "quantity": 1,
+          "image": "/cake/cake1.avif"
+        }
+      ],
+      "totalAmount": 800,
+      "paymentMethod": "upi",
+      "paymentStatus": "completed",
+      "address": {
+        "fullName": "Manhar",
+        "mobile": "0974511840",
+        "house": "kolappuram",
+        "street": "klpm",
+        "city": "vengara",
+        "pincode": "676305",
+        "state": "kerala"
+      },
+      "date": "2025-12-12T11:46:20.674Z",
+      "status": "Success"
+    },
+    {
+      "id": "726d",
+      "userId": "1267",
+      "items": [
+        {
+          "id": "2",
+          "name": "Choco Cream Cake",
+          "price": 750,
+          "quantity": 5,
+          "image": "/cake/cake2.avif"
+        }
+      ],
+      "totalAmount": 3750,
+      "paymentMethod": "upi",
+      "paymentStatus": "completed",
+      "address": {
+        "fullName": "Manhar",
+        "mobile": "0974511840",
+        "house": "kolappuram",
+        "street": "klpm",
+        "city": "vengara",
+        "pincode": "676305",
+        "state": "kerala"
+      },
+      "date": "2025-12-29T16:31:45.500Z",
+      "status": "Success"
+    },
+    {
+      "id": "b483",
+      "userId": "1267",
+      "items": [
+        {
+          "id": "2",
+          "name": "Choco Cream Cake",
+          "price": 750,
+          "quantity": 5,
+          "image": "/cake/cake2.avif"
+        },
+        {
+          "id": "2",
+          "name": "Choco Cream Cake",
+          "price": 750,
+          "quantity": 3,
+          "image": "/cake/cake2.avif"
+        }
+      ],
+      "totalAmount": 6000,
+      "paymentMethod": "upi",
+      "paymentStatus": "completed",
+      "address": {
+        "fullName": "Manhar",
+        "mobile": "0974511840",
+        "house": "kolappuram",
+        "street": "klpm",
+        "city": "vengara",
+        "pincode": "676305",
+        "state": "kerala"
+      },
+      "date": "2025-12-29T16:51:14.629Z",
+      "status": "Success"
+    },
+    {
+      "id": "47ba",
+      "userId": "1267",
+      "items": [
+        {
+          "id": "2",
+          "name": "Choco Cream Cake",
+          "price": 750,
+          "quantity": 5,
+          "image": "/cake/cake2.avif"
+        },
+        {
+          "id": "2",
+          "name": "Choco Cream Cake",
+          "price": 750,
+          "quantity": 5,
+          "image": "/cake/cake2.avif"
+        }
+      ],
+      "totalAmount": 7500,
+      "paymentMethod": "upi",
+      "paymentStatus": "completed",
+      "address": {
+        "fullName": "Manhar",
+        "mobile": "0974511840",
+        "house": "kolappuram",
+        "street": "klpm",
+        "city": "vengara",
+        "pincode": "676305",
+        "state": "kerala"
+      },
+      "date": "2025-12-29T17:04:21.025Z",
+      "status": "Success"
+    },
+    {
+      "id": "5888",
+      "userId": "1267",
+      "items": [
+        {
+          "id": "2",
+          "name": "Choco Cream Cake",
+          "price": 750,
+          "quantity": 2,
+          "image": "/cake/cake2.avif"
+        },
+        {
+          "id": "3",
+          "name": "Black Forest Cake",
+          "price": 900,
+          "quantity": 1,
+          "image": "/cake/cake3.avif"
+        }
+      ],
+      "totalAmount": 2400,
+      "paymentMethod": "upi",
+      "paymentStatus": "completed",
+      "address": {
+        "fullName": "Manhar",
+        "mobile": "0974511840",
+        "house": "kolappuram",
+        "street": "klpm",
+        "city": "vengara",
+        "pincode": "676305",
+        "state": "kerala"
+      },
+      "date": "2025-12-29T17:20:37.988Z",
+      "status": "Success"
+    },
+    {
+      "id": "5f0a",
+      "userId": "1267",
+      "items": [
+        {
+          "id": "2",
+          "name": "Choco Cream Cake",
+          "price": 750,
+          "quantity": 1,
+          "image": "/cake/cake2.avif"
+        }
+      ],
+      "totalAmount": 750,
+      "paymentMethod": "upi",
+      "paymentStatus": "completed",
+      "address": {
+        "fullName": "Manhar",
+        "mobile": "0974511840",
+        "house": "kolappuram",
+        "street": "klpm",
+        "city": "vengara",
+        "pincode": "676305",
+        "state": "kerala"
+      },
+      "date": "2025-12-29T17:27:37.978Z",
+      "status": "Success"
+    }
+  ]
+}
