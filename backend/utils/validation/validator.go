@@ -1,0 +1,92 @@
+package validation
+
+import (
+	"fmt"
+	"regexp"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
+)
+
+var (
+	nameRegex = regexp.MustCompile(`^[a-zA-Z\s]+$`)
+)
+
+func InitValidation() {
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterValidation("name", validateName)
+		v.RegisterValidation("password", validatePassword)
+	}
+}
+
+func validateName(fl validator.FieldLevel) bool {
+	return nameRegex.MatchString(fl.Field().String())
+}
+
+func validatePassword(fl validator.FieldLevel) bool {
+	password := fl.Field().String()
+
+	if len(password) < 6 || len(password) > 20 {
+		return false
+	}
+
+	var hasUpper, hasLower bool
+
+	for _, ch := range password {
+		switch {
+		case 'A' <= ch && ch <= 'Z':
+			hasUpper = true
+		case 'a' <= ch && ch <= 'z':
+			hasLower = true
+		}
+	}
+
+	return hasUpper && hasLower
+}
+
+func FormatValidationErrors(err error) gin.H {
+	var errors []string
+
+	if validationErrors, ok := err.(validator.ValidationErrors); ok {
+		for _, e := range validationErrors {
+			switch e.Tag() {
+			case "required":
+				errors = append(errors, fmt.Sprintf("%s is required", e.Field()))
+
+			case "email":
+				errors = append(errors, fmt.Sprintf("%s must be a valid email", e.Field()))
+
+			case "name":
+				errors = append(errors, fmt.Sprintf("%s must contain only letters and spaces", e.Field()))
+
+			case "phone":
+				errors = append(errors, fmt.Sprintf("%s must be a valid 10-digit phone number", e.Field()))
+
+			case "password":
+				errors = append(errors, fmt.Sprintf("%s must contain uppercase, lowercase and a number", e.Field()))
+
+			case "min":
+				errors = append(errors, fmt.Sprintf("%s is too short", e.Field()))
+
+			case "max":
+				errors = append(errors, fmt.Sprintf("%s is too long", e.Field()))
+
+			default:
+				errors = append(errors, fmt.Sprintf("%s is invalid", e.Field()))
+			}
+		}
+	} else {
+		errors = append(errors, "Invalid request body")
+	}
+
+	if len(errors) > 0 {
+		return gin.H{
+			"error": errors[0],
+		}
+	}
+
+	return gin.H{
+		"error": "Validation failed",
+	}
+}

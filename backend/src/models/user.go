@@ -15,7 +15,7 @@ type User struct {
 
 	Role       string `gorm:"default:user"`
 	IsBlocked  bool   `gorm:"default:false"`
-	IsVerified bool
+	IsVerified bool   `gorm:"default:false"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
