@@ -68,6 +68,17 @@ func LoadConfig() *Config {
 	cfg.JWT.RefreshTTLHours = getEnvAsInt("REFRESH_TTL_HOUR", 168)
 	cfg.JWT.MaxSessionHours = getEnvAsInt("MAX_SESSION", 720)
 
+	//email
+	cfg.SMTP.Host = getEnv("SMTP_HOST", "smtp.gmail.com")
+	cfg.SMTP.Port = getEnvAsInt("SMTP_PORT", 587)
+	cfg.SMTP.Username = getEnv("SMTP_USERNAME", "")
+	cfg.SMTP.Password = getEnv("SMTP_PASSWORD", "")
+	cfg.SMTP.From = getEnv("SMTP_FROM", "bakehub <hashinnadin@gmail.com>")
+
+	//otp
+	cfg.OTP.Length = getEnvAsInt("OTP_LENGTH", 5)
+	cfg.OTP.ExpiryMinutes = getEnvAsInt("OTP_EXPIRY_MINUTES", 5)
+
 	return cfg
 }
 

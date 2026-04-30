@@ -6,7 +6,10 @@ import (
 	"math/big"
 )
 
-func GenarateOtp() string {
-	n, _ := rand.Int(rand.Reader, big.NewInt(900000))
-	return fmt.Sprintf("%06d", n.Int64()+100000)
+func GenerateOTP() (string, error) {
+	n, err := rand.Int(rand.Reader, big.NewInt(90000))
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%05d", n.Int64()+10000), nil
 }

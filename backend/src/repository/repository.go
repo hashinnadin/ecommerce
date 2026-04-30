@@ -32,6 +32,9 @@ func (r *Repository) DeleteWhere(obj interface{}, query string, args ...interfac
 func (r *Repository) FindByID(obj interface{}, id interface{}) error {
 	return r.DB.First(obj, "id = ?", id).Error
 }
+func (r *Repository) FindOneWhere(obj interface{}, query string, args ...interface{}) error {
+	return r.DB.Where(query, args...).First(obj).Error
+}
 
 func (r *Repository) FindAll(obj interface{}) error {
 	return r.DB.Find(obj).Error

@@ -4,19 +4,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
-	"gorm.io/gorm"
 )
 
 type RefreshToken struct {
-	ID     uuid.UUID `gorm:"type:uuid;primarykey"`
-	UserID uuid.UUID `gorm:"type:uuid"`
-
-	Token     string
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey"`
+	UserID    uuid.UUID `gorm:"type:uuid;not null"`
+	Token     string    `gorm:"type:text;not null"`
+	ExpiresAt time.Time `gorm:"index"`
 	CreatedAt time.Time
-}
-
-func (r *RefreshToken) BeforeCreate(tx *gorm.DB) error {
-	r.ID = uuid.New()
-	return nil
+	UpdatedAt time.Time
+	User      User `gorm:"foreignKey:UserID"`
 }
