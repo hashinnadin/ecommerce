@@ -25,7 +25,7 @@ func main() {
 	repo := repository.SetUpRepo(db)
 	redis := cache.NewRedis()
 	jwtManager := jwt.NewJWTManager(cfg)
-	emaliService := email.NewEmailServiece(cfg)
+	emailService := email.NewEmailService(cfg)
 
 	authService := services.NewAuthService(repo, jwtManager, emaliService, redis, cfg)
 	authController := controller.NewAuthController(authService)
