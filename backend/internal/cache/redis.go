@@ -19,5 +19,10 @@ func NewRedis() *Redis {
 		DB:   0,
 	})
 
+	// Fail fast if Redis is not running
+	if err := client.Ping(Ctx).Err(); err != nil {
+		panic("Failed to connect to Redis. Please make sure Redis is installed and running externally! Error: " + err.Error())
+	}
+
 	return &Redis{Client: client}
 }

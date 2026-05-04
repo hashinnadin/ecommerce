@@ -1,46 +1,32 @@
 package controller
 
 import (
+	
+	"myapp/src/dto"
 	"myapp/src/services"
 	"myapp/utils/constant"
 	"myapp/utils/logger"
 	"myapp/utils/validation"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 type AuthController struct {
-	authService *services.AuthServiece
+	authService *services.AuthService
 }
 
-func NewAuthController(service *services.AuthServiece) *AuthController {
+func NewAuthController(service *services.AuthService) *AuthController {
 	return &AuthController{authService: service}
 }
 
-type SignupRequest struct {
-	Name     string `json:"name" binding:"required,min=2,max=50"`
-	Email    string `json:"email" binding:"required,email"`
-	Phone    string `json:"phone" binding:"required,phone"`
-	Password string `json:"password" binding:"required,min=6,password"`
-}
-
-type VerifyOTP struct {
-	Email string `json:"email" binding:"required,email"`
-	OTP   string `json:"otp" binding:"required"`
-}
-
-type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
-}
-
 func (a *AuthController) Signup(c *gin.Context) {
-	var req SignupRequest
+	var req dto.SignupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(constant.BADREQUEST, validation.FormatValidationErrors(err))
 		return
 	}
-	logger.Log.Info("Signup:", req.Email)
+	logger.Log.Info("Signup:", req.Email, req.Name)
 	err := a.authService.Signup(req.Name, req.Email, req.Password)
 	if err != nil {
 		logger.Log.Error("Signup failed:", err)
@@ -53,7 +39,7 @@ func (a *AuthController) Signup(c *gin.Context) {
 }
 
 func (a *AuthController) VerifyOTP(c *gin.Context) {
-	var req VerifyOTP
+	var req dto.VerifyOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(constant.BADREQUEST, validation.FormatValidationErrors(err))
 		return
@@ -68,13 +54,8 @@ func (a *AuthController) VerifyOTP(c *gin.Context) {
 		"message": "Account verified",
 	})
 }
-
-type ResendOTPRequest struct {
-	Email string `json:"email" binding:"required,email"`
-}
-
 func (c *AuthController) ResendOTP(ctx *gin.Context) {
-	var req ResendOTPRequest
+	var req dto.ResendOTPRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(constant.BADREQUEST, validation.FormatValidationErrors(err))
 		return
@@ -87,7 +68,7 @@ func (c *AuthController) ResendOTP(ctx *gin.Context) {
 }
 
 func (a *AuthController) Login(c *gin.Context) {
-	var req LoginRequest
+	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(constant.BADREQUEST, validation.FormatValidationErrors(err))
 		return
@@ -106,9 +87,7 @@ func (a *AuthController) Login(c *gin.Context) {
 }
 
 func (a *AuthController) Refresh(c *gin.Context) {
-	var body struct {
-		RefreshToken string `json:"refresh_token" binding:"required"`
-	}
+	var body dto.TokenRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(constant.BADREQUEST, validation.FormatValidationErrors(err))
 		return
@@ -126,14 +105,22 @@ func (a *AuthController) Refresh(c *gin.Context) {
 }
 
 func (a *AuthController) Logout(c *gin.Context) {
-	var body struct {
-		RefreshToken string `json:"refresh_token" binding:"required"`
-	}
+	var body dto.TokenRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(constant.BADREQUEST, validation.FormatValidationErrors(err))
 		return
 	}
-	err := a.authService.Logout(body.RefreshToken)
+
+	var accessToken string
+	authHeader := c.GetHeader("Authorization")
+	if authHeader != "" {
+		parts := strings.Split(authHeader, " ")
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			accessToken = parts[1]
+		}
+	}
+
+	err := a.authService.Logout(body.RefreshToken, accessToken)
 	if err != nil {
 		logger.Log.Error("Logout failed:", err)
 		c.JSON(constant.INTERNALSERVERERROR, gin.H{"error": err.Error()})
@@ -151,9 +138,35 @@ func (a *AuthController) Dashboard(c *gin.Context) {
 		return
 	}
 	c.JSON(constant.SUCCESS, gin.H{
-		"message": "Welcome to User Dashboard",
+		"message": "Welcome to " + user.Name,
 		"user_id": userID,
 		"name":    user.Name,
 		"role":    role,
 	})
+}
+
+func (a *AuthController) ForgotPassword(c *gin.Context) {
+	var req dto.ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(constant.BADREQUEST, validation.FormatValidationErrors(err))
+		return
+	}
+	if err := a.authService.ForgotPassword(req.Email); err != nil {
+		c.JSON(constant.BADREQUEST, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(constant.SUCCESS, gin.H{"message": "Password reset OTP sent to your email"})
+}
+
+func (a *AuthController) ResetPassword(c *gin.Context) {
+	var req dto.ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(constant.BADREQUEST, validation.FormatValidationErrors(err))
+		return
+	}
+	if err := a.authService.ResetPassword(req.Email, req.OTP, req.NewPassword); err != nil {
+		c.JSON(constant.BADREQUEST, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(constant.SUCCESS, gin.H{"message": "Password reset successfully"})
 }

@@ -1,37 +1,24 @@
 package routes
 
 import (
+	"myapp/internal/cache"
 	"myapp/middleware"
-	controllers "myapp/src/controller"
+	"myapp/src/controller"
 	"myapp/src/repository"
 	"myapp/utils/jwt"
-	"time"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func SetUpRoutes(
 	r *gin.Engine,
-	authController *controllers.AuthController,
+	authController *controller.AuthController,
+	productController *controller.ProductController,
 	jwtManager *jwt.Manager,
 	repo *repository.Repository,
+	redisClient *cache.Redis,
 ) {
-	r.Use(cors.New(cors.Config{
-		AllowOriginFunc: func(origin string) bool {
-			return true // Allow all origins for development
-		},
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
-	}))
-	r.GET("/api/test", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "backend connected",
-		})
-	})
+
 	auth := r.Group("/auth")
 	{
 		auth.POST("/signup", authController.Signup)
@@ -40,10 +27,27 @@ func SetUpRoutes(
 		auth.POST("/login", authController.Login)
 		auth.POST("/refresh", authController.Refresh)
 		auth.POST("/logout", authController.Logout)
+		auth.POST("/forgot-password", authController.ForgotPassword)
+		auth.POST("/reset-password", authController.ResetPassword)
 	}
 
 	// User routes
 	user := r.Group("/user")
-	user.Use(middleware.AuthMiddleware(jwtManager))
+	user.Use(middleware.AuthMiddleware(jwtManager, redisClient))
 	user.GET("/dashboard", authController.Dashboard)
+
+	// Product routes
+	products := r.Group("/products")
+	{
+		products.GET("", productController.GetAllProducts)
+		products.GET("/:id", productController.GetProductByID)
+	}
+
+	// Admin routes
+	admin := r.Group("/admin")
+	{
+		admin.POST("/products", productController.CreateProduct)
+		admin.PUT("/products/:id", productController.UpdateProduct)
+		admin.DELETE("/products/:id", productController.DeleteProduct)
+	}
 }

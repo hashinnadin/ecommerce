@@ -3,18 +3,20 @@ package database
 import (
 	"fmt"
 	"log"
-	"myapp/config"
+	"myapp/src/schema"
 	"sync"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-var pgOnce sync.Once
+// changed
+var (
+	pgOnce sync.Once
+	pgDb   *gorm.DB
+)
 
-func SetupDatabase(cfg *config.Config) *gorm.DB {
-	pgDb := &gorm.DB{}
-
+func SetupDatabase(cfg *schema.Config) *gorm.DB {
 	pgOnce.Do(func() {
 		dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=%s",
 			cfg.DB.Host,
@@ -36,7 +38,10 @@ func SetupDatabase(cfg *config.Config) *gorm.DB {
 		sqlDB.SetMaxOpenConns(10)
 		sqlDB.SetMaxIdleConns(5)
 		pgDb = db
-		log.Fatal("Database connected succesfully")
+
+		db.AutoMigrate(&schema.User{}, &schema.RefreshToken{}, &schema.Product{})
+
+		log.Println("Database connected succesfully")
 	})
 	return pgDb
 }

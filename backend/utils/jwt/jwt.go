@@ -2,7 +2,7 @@ package jwt
 
 import (
 	"errors"
-	"myapp/config"
+	"myapp/src/schema"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -16,7 +16,7 @@ type Manager struct {
 	maxSession    time.Duration
 }
 
-func NewJWTManager(cfg *config.Config) *Manager {
+func NewJWTManager(cfg *schema.Config) *Manager {
 	return &Manager{
 		accessSecret:  cfg.JWT.AccessSecret,
 		refreshSecret: cfg.JWT.RefreshSecret,

@@ -14,7 +14,7 @@ function Payment() {
 
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [loading, setLoading] = useState(false);
-  const [savingAddress, setSavingAddress] = useState(false);
+
 
   const [address, setAddress] = useState({
     fullName: "",

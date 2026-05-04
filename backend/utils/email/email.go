@@ -2,30 +2,30 @@ package email
 
 import (
 	"fmt"
-	"myapp/config"
+	"myapp/src/schema"
 	"net/smtp"
 )
 
 type Service struct {
-	cfg config.Config
+	cfg schema.Config
 }
 
-func NewEmailServiece(cfg *config.Config) *Service {
+func NewEmailService(cfg *schema.Config) *Service {
 	return &Service{cfg: *cfg}
 }
 
 func (s *Service) SendMail(to, subject, body string) error {
 	from := s.cfg.SMTP.Username
-	formHeader := s.cfg.SMTP.From
+	fromHeader := s.cfg.SMTP.From
 
 	message := fmt.Sprintf(
-		"Form: %s\r\n"+
-			"To:%s\r\n"+
-			"subject:%s\r\n"+
-			"MIME-Version:1.0\r\n"+
-			"Content-Type: text/plain;charset=\"UTF-8\"\r\n\r\n"+
+		"From: %s\r\n"+
+			"To: %s\r\n"+
+			"Subject: %s\r\n"+
+			"MIME-Version: 1.0\r\n"+
+			"Content-Type: text/plain; charset=\"UTF-8\"\r\n\r\n"+
 			"%s",
-		formHeader, to, subject, body,
+		fromHeader, to, subject, body,
 	)
 	address := fmt.Sprintf("%s:%d", s.cfg.SMTP.Host, s.cfg.SMTP.Port)
 
@@ -36,7 +36,7 @@ func (s *Service) SendMail(to, subject, body string) error {
 
 func (s *Service) SendOTP(to string, otp string) error {
 	body := fmt.Sprintf(
-		"Hello,\n\nYour OTP is: %s\nIt will expire in %d minutes. \n\nThanks, \nSootika Team",
+		"Hello,\n\nYour OTP is: %s\nIt will expire in %d minutes. \n\nThanks, \nBakeHub Team",
 		otp,
 		s.cfg.OTP.ExpiryMinutes,
 	)

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -7,30 +7,20 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
 
-  const [user, setUser] = useState(null);
-  const [admin, setAdmin] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // 🔹 INIT AUTH
-  useEffect(() => {
+  const [user, setUser] = useState(() => {
     const storedUser = localStorage.getItem("user");
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+  const [admin, setAdmin] = useState(() => {
     const storedAdmin = localStorage.getItem("admin");
-
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-
-    if (storedAdmin) {
-      setAdmin(JSON.parse(storedAdmin));
-    }
-
-    setLoading(false);
-  }, []);
+    return storedAdmin ? JSON.parse(storedAdmin) : null;
+  });
+  const [loading] = useState(false);
 
   // 🔹 USER LOGIN
   const loginUser = (userData) => {
     // Don't store password in localStorage
-    const { password, ...safeUserData } = userData;
+    const { password: _, ...safeUserData } = userData;
     localStorage.setItem("user", JSON.stringify(safeUserData));
     localStorage.removeItem("admin");
 
@@ -81,6 +71,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

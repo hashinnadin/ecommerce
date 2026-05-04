@@ -25,10 +25,6 @@ func (r *Repository) Delete(obj interface{}, id interface{}) error {
 	return r.DB.Where("id = ?", id).Delete(obj).Error
 }
 
-func (r *Repository) DeleteWhere(obj interface{}, query string, args ...interface{}) error {
-	return r.DB.Where(query, args...).Delete(obj).Error
-}
-
 func (r *Repository) FindByID(obj interface{}, id interface{}) error {
 	return r.DB.First(obj, "id = ?", id).Error
 }
@@ -36,15 +32,12 @@ func (r *Repository) FindOneWhere(obj interface{}, query string, args ...interfa
 	return r.DB.Where(query, args...).First(obj).Error
 }
 
-func (r *Repository) FindAll(obj interface{}) error {
-	return r.DB.Find(obj).Error
-}
-
-func (r *Repository) FindAllWhere(obj interface{}, query string, args ...interface{}) error {
+func (r *Repository) Where(obj interface{}, query string, args ...interface{}) error {
 	return r.DB.Where(query, args...).Find(obj).Error
 }
-func (r *Repository) Count(model interface{}, count *int64) error {
-	return r.DB.Model(model).Count(count).Error
+
+func (r *Repository) FindAll(obj interface{}) error {
+	return r.DB.Find(obj).Error
 }
 
 func (r *Repository) GetDB() *gorm.DB {

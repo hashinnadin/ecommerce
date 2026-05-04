@@ -5,50 +5,19 @@ import (
 	"os"
 	"strconv"
 
+	"myapp/src/schema"
+
 	"github.com/joho/godotenv"
 )
 
-type Config struct {
-	Server struct {
-		Port string
-	}
-	DB struct {
-		Host     string
-		Port     int
-		User     string
-		Password string
-		Name     string
-		SSLMode  string
-		TimeZone string
-	}
-	JWT struct {
-		AccessSecret     string
-		RefreshSecret    string
-		AccessTTLMinutes int
-		RefreshTTLHours  int
-		MaxSessionHours  int
-	}
-	SMTP struct {
-		Host     string
-		Port     int
-		Username string
-		Password string
-		From     string
-	}
-	OTP struct {
-		Length        int
-		ExpiryMinutes int
-	}
-}
-
-func LoadConfig() *Config {
+func LoadConfig() *schema.Config {
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Println("No .env file found")
 	}
 	log.Println("ENV DB_HOST:", os.Getenv("DB_HOST"))
 
-	cfg := &Config{}
+	cfg := &schema.Config{}
 
 	cfg.Server.Port = getEnv("SERVER_PORT", "8080")
 

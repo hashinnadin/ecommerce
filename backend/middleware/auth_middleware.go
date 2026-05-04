@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"myapp/internal/cache"
 	"myapp/utils/constant"
 	"myapp/utils/jwt"
 	"strings"
@@ -8,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AuthMiddleware(jwtManager *jwt.Manager) gin.HandlerFunc {
+func AuthMiddleware(jwtManager *jwt.Manager, redisClient *cache.Redis) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		authHeader := c.GetHeader("Authorization")
@@ -24,6 +25,15 @@ func AuthMiddleware(jwtManager *jwt.Manager) gin.HandlerFunc {
 			return
 		}
 		token := parts[1]
+
+		// Check if token is blacklisted
+		key := "blacklist:" + token
+		val, err := redisClient.Client.Get(cache.Ctx, key).Result()
+		if err == nil && val == "true" {
+			c.JSON(constant.UNAUTHORIZED, gin.H{"error": "Token has been revoked"})
+			c.Abort()
+			return
+		}
 
 		claims, err := jwtManager.ValidateAccessToken(token)
 		if err != nil {

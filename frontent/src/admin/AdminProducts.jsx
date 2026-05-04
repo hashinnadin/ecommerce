@@ -51,7 +51,7 @@ function AdminProducts() {
     loadProducts();
   }, []);
 
-  /* 🗑 DELETE PRODUCT */
+  /* 🗑  PRODUCT */
   const deleteProduct = async (id) => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
     try {

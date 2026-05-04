@@ -22,7 +22,6 @@ function Products() {
   const [sortBy, setSortBy] = useState("default");
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 5000 });
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -43,11 +42,7 @@ function Products() {
       const uniqueCategories = [...new Set(data.map(item => item.category))];
       setCategories(uniqueCategories);
       
-      // Find min and max price
-      const prices = data.map(p => p.price);
-      const minPrice = Math.min(...prices);
-      const maxPrice = Math.max(...prices);
-      setPriceRange({ min: minPrice, max: maxPrice });
+
       
     } catch (error) {
       console.error("Failed to load products:", error);
@@ -61,6 +56,7 @@ function Products() {
     if (products.length > 0) {
       filterAndSortProducts();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products, searchTerm, sortBy, selectedCategory]);
 
   const filterAndSortProducts = () => {

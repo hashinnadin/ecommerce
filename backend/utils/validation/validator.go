@@ -10,18 +10,24 @@ import (
 )
 
 var (
-	nameRegex = regexp.MustCompile(`^[a-zA-Z\s]+$`)
+	nameRegex  = regexp.MustCompile(`^[a-zA-Z\s]+$`)
+	phoneRegex = regexp.MustCompile(`^\d{10}$`)
 )
 
 func InitValidation() {
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("name", validateName)
 		v.RegisterValidation("password", validatePassword)
+		v.RegisterValidation("phone", validatePhone)
 	}
 }
 
 func validateName(fl validator.FieldLevel) bool {
 	return nameRegex.MatchString(fl.Field().String())
+}
+
+func validatePhone(fl validator.FieldLevel) bool {
+	return phoneRegex.MatchString(fl.Field().String())
 }
 
 func validatePassword(fl validator.FieldLevel) bool {
@@ -31,7 +37,7 @@ func validatePassword(fl validator.FieldLevel) bool {
 		return false
 	}
 
-	var hasUpper, hasLower bool
+	var hasUpper, hasLower, hasNumber bool
 
 	for _, ch := range password {
 		switch {
@@ -39,10 +45,12 @@ func validatePassword(fl validator.FieldLevel) bool {
 			hasUpper = true
 		case 'a' <= ch && ch <= 'z':
 			hasLower = true
+		case '0' <= ch && ch <= '9':
+			hasNumber = true
 		}
 	}
 
-	return hasUpper && hasLower
+	return hasUpper && hasLower && hasNumber
 }
 
 func FormatValidationErrors(err error) gin.H {
@@ -72,11 +80,19 @@ func FormatValidationErrors(err error) gin.H {
 			case "max":
 				errors = append(errors, fmt.Sprintf("%s is too long", e.Field()))
 
+			case "eqfield":
+				if e.Field() == "ConfirmPassword" && e.Param() == "Password" {
+					errors = append(errors, "Passwords do not match")
+				} else {
+					errors = append(errors, fmt.Sprintf("%s must match %s", e.Field(), e.Param()))
+				}
+
 			default:
 				errors = append(errors, fmt.Sprintf("%s is invalid", e.Field()))
 			}
 		}
 	} else {
+		fmt.Printf("DEBUG Validation Error: %v\n", err)
 		errors = append(errors, "Invalid request body")
 	}
 

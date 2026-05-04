@@ -1,4 +1,4 @@
-package models
+package schema
 
 import (
 	"time"
@@ -9,7 +9,7 @@ import (
 
 type User struct {
 	ID       uuid.UUID `gorm:"type:uuid;primaryKey"`
-	Name     string    `gorm:"no null"`
+	Name     string    `gorm:"not null"`
 	Email    string    `gorm:"uniqueIndex;not null"`
 	Password string    `gorm:"not null"`
 

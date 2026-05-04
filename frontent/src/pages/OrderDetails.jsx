@@ -36,7 +36,7 @@ function OrderDetails() {
             if (orderRes.data && orderRes.data.userId === user.id) {
               foundOrder = orderRes.data;
             }
-          } catch (error) {
+          } catch {
             console.log("Order not in separate collection");
           }
         }

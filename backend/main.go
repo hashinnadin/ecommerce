@@ -27,16 +27,21 @@ func main() {
 	jwtManager := jwt.NewJWTManager(cfg)
 	emailService := email.NewEmailService(cfg)
 
-	authService := services.NewAuthService(repo, jwtManager, emaliService, redis, cfg)
+	authService := services.NewAuthService(repo, jwtManager, emailService, redis, cfg)
 	authController := controller.NewAuthController(authService)
+
+	productService := services.NewProductService(repo)
+	productController := controller.NewProductController(productService)
 
 	r := gin.Default()
 
 	routes.SetUpRoutes(
 		r,
 		authController,
+		productController,
 		jwtManager,
 		repo,
+		redis,
 	)
 
 	logger.Log.Info("Server running on port", cfg.Server.Port)

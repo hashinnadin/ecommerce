@@ -17,7 +17,6 @@ function Navbar() {
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isSearchActive, setIsSearchActive] = useState(false);
 
   const isActive = (path) => location.pathname === path;
 
@@ -26,7 +25,6 @@ function Navbar() {
     if (searchTerm.trim()) {
       navigate(`/products?search=${searchTerm}`);
       setSearchTerm("");
-      setIsSearchActive(false);
     }
   };
 
@@ -48,14 +46,7 @@ function Navbar() {
     }
   };
 
-  const handleOrdersClick = () => {
-    if (!user) {
-      toast.error("Please login first");
-      navigate("/login");
-    } else {
-      navigate("/orders");
-    }
-  };
+
 
   const navLinks = [
     { path: "/", label: "Home", icon: <FaHome /> },
