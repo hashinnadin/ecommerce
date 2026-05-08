@@ -15,6 +15,7 @@ import {
   FaTimes,
   FaTachometerAlt,
 } from "react-icons/fa";
+import API from "../api";
 
 function AdminProducts() {
   const navigate = useNavigate();
@@ -37,8 +38,8 @@ function AdminProducts() {
   /* 🔹 LOAD PRODUCTS */
   const loadProducts = async () => {
     try {
-      const res = await fetch("http://localhost:3002/products");
-      const data = await res.json();
+      const res = await API.get("/products");
+      const data = res.data;
       setProducts(data);
     } catch {
       toast.error("Failed to load products!");

@@ -2,9 +2,14 @@ package services
 
 import (
 	"errors"
-	"myapp/src/schema"
+	"fmt"
 	"myapp/src/dto"
 	"myapp/src/repository"
+	"myapp/src/schema"
+	"myapp/utils/uploads"
+	"strings"
+
+	"github.com/google/uuid"
 )
 
 type ProductService struct {
@@ -17,75 +22,184 @@ func NewProductService(repo repository.PgSQLRepository) *ProductService {
 	}
 }
 
-func (s *ProductService) CreateProduct(req dto.CreateProductRequest) (*schema.Product, error) {
-	product := schema.Product{
-		Name:        req.Name,
-		Price:       req.Price,
-		Category:    req.Category,
-		Description: req.Description,
-		Image:       req.Image,
-		Rating:      0.0, // Default rating
+func (s *ProductService) CreateProduct(input *dto.CreateProductInput) (*schema.Product, error) {
+
+	if input == nil {
+		return nil, errors.New("invalid input")
 	}
 
-	if err := s.Repo.Insert(&product); err != nil {
-		return nil, err
+	file := input.MainImage
+
+	if file == nil {
+		return nil, errors.New("main image required")
 	}
-	return &product, nil
+
+	// file size validation (2MB)
+	if file.Size > 2*1024*1024 {
+		return nil, errors.New("file too large")
+	}
+
+	// file type validation
+	contentType := file.Header.Get("Content-Type")
+
+	if contentType != "image/jpeg" &&
+		contentType != "image/png" &&
+		contentType != "image/jpg" {
+		return nil, errors.New("only jpg/png images allowed")
+	}
+
+	mainFile, err := file.Open()
+	if err != nil {
+		return nil, fmt.Errorf("failed to open image: %w", err)
+	}
+	defer mainFile.Close()
+
+	uploadResult, err := uploads.UploadImageFile(mainFile, file.Filename)
+	if err != nil {
+		return nil, fmt.Errorf("image upload failed: %w", err)
+	}
+
+	product := &schema.Product{
+		Title:             input.Title,
+		Name:              input.Name,
+		Description:       input.Description,
+		Category:          input.Category,
+		Price:             input.Price,
+		Stock:             input.Stock,
+		InStock:           input.Stock > 0,
+		MainImage:         uploadResult.URL,
+		MainImagePublicID: uploadResult.PublicID,
+	}
+
+	if err := s.Repo.Insert(product); err != nil {
+
+		uploads.DeleteImage(uploadResult.PublicID)
+
+		return nil, fmt.Errorf("failed to create product: %w", err)
+	}
+
+	return product, nil
 }
 
-func (s *ProductService) GetAllProducts() ([]schema.Product, error) {
+func (s *ProductService) GetAllProducts(searchQuery string, category string) ([]schema.Product, error) {
+
 	var products []schema.Product
-	if err := s.Repo.FindAll(&products); err != nil {
+
+	query := s.Repo.GetDB().Model(&schema.Product{})
+
+	if searchQuery != "" {
+
+		search := "%" + strings.ToLower(searchQuery) + "%"
+
+		query = query.Where(`
+			LOWER(name) LIKE ? OR
+			LOWER(title) LIKE ? OR
+			LOWER(description) LIKE ?
+		`, search, search, search)
+	}
+
+	if category != "" {
+
+		query = query.Where(
+			"LOWER(category) = LOWER(?)",
+			category,
+		)
+	}
+
+	if err := query.Find(&products).Error; err != nil {
 		return nil, err
 	}
+
 	return products, nil
 }
 
-func (s *ProductService) GetProductByID(id uint) (*schema.Product, error) {
+func (s *ProductService) GetProductByID(id uuid.UUID) (*schema.Product, error) {
+
 	var product schema.Product
+
 	if err := s.Repo.FindByID(&product, id); err != nil {
 		return nil, errors.New("product not found")
 	}
+
 	return &product, nil
 }
 
-func (s *ProductService) UpdateProduct(id uint, req dto.UpdateProductRequest) (*schema.Product, error) {
-	// First check if it exists
+func (s *ProductService) UpdateProduct(
+	id uuid.UUID,
+	req *dto.UpdateProductInput,
+) (*schema.Product, error) {
+
 	_, err := s.GetProductByID(id)
 	if err != nil {
 		return nil, err
 	}
 
 	updates := map[string]interface{}{}
-	if req.Name != "" {
-		updates["name"] = req.Name
-	}
-	if req.Price > 0 {
-		updates["price"] = req.Price
-	}
-	if req.Category != "" {
-		updates["category"] = req.Category
-	}
-	if req.Description != "" {
-		updates["description"] = req.Description
-	}
-	if req.Image != "" {
-		updates["image"] = req.Image
+
+	if req.Title != nil {
+		updates["title"] = *req.Title
 	}
 
-	if len(updates) > 0 {
-		if err := s.Repo.UpdateByFields(&schema.Product{}, id, updates); err != nil {
-			return nil, err
+	if req.Name != nil {
+		updates["name"] = *req.Name
+	}
+
+	if req.Description != nil {
+		updates["description"] = *req.Description
+	}
+
+	if req.Category != nil {
+		updates["category"] = *req.Category
+	}
+
+	if req.Price != nil {
+
+		if *req.Price <= 0 {
+			return nil, errors.New("price must be greater than 0")
 		}
+
+		updates["price"] = *req.Price
+	}
+
+	if req.Stock != nil {
+
+		if *req.Stock < 0 {
+			return nil, errors.New("stock cannot be negative")
+		}
+
+		updates["stock"] = *req.Stock
+		updates["in_stock"] = *req.Stock > 0
+	}
+
+	if len(updates) == 0 {
+		return nil, errors.New("no fields provided for update")
+	}
+
+	if err := s.Repo.UpdateByFields(
+		&schema.Product{},
+		id,
+		updates,
+	); err != nil {
+		return nil, err
 	}
 
 	return s.GetProductByID(id)
 }
 
-func (s *ProductService) DeleteProduct(id uint) error {
+func (s *ProductService) DeleteProduct(id uuid.UUID) error {
+
 	var product schema.Product
+
 	if err := s.Repo.FindByID(&product, id); err != nil {
 		return errors.New("product not found")
 	}
+
+	if product.MainImagePublicID != "" {
+
+		if err := uploads.DeleteImage(product.MainImagePublicID); err != nil {
+			fmt.Println("failed to delete image:", err)
+		}
+	}
+
 	return s.Repo.Delete(&schema.Product{}, id)
 }

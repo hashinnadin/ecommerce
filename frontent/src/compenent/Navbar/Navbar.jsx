@@ -104,13 +104,13 @@ function Navbar() {
           <div className="hidden lg:flex flex-1 max-w-md mx-6">
             <form onSubmit={handleSearch} className="relative w-full">
               <div className="relative">
-                {/* <input
+                <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search cakes by name or flavor..."
                   className="w-full px-5 py-2.5 pl-12 rounded-full border border-gray-300 focus:border-rose-400 focus:ring-2 focus:ring-rose-100 focus:outline-none bg-gray-50 text-gray-700 placeholder-gray-400"
-                /> */}
+                />
                 <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
                   <HiSearch size={18} />
                 </div>

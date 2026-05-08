@@ -39,8 +39,6 @@ func SetupDatabase(cfg *schema.Config) *gorm.DB {
 		sqlDB.SetMaxIdleConns(5)
 		pgDb = db
 
-		db.AutoMigrate(&schema.User{}, &schema.RefreshToken{}, &schema.Product{})
-
 		log.Println("Database connected succesfully")
 	})
 	return pgDb

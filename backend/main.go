@@ -7,6 +7,7 @@ import (
 	"myapp/internal/routes"
 	"myapp/src/controller"
 	"myapp/src/database"
+	"myapp/src/migration"
 	"myapp/src/repository"
 	"myapp/src/services"
 	"myapp/utils/email"
@@ -14,6 +15,7 @@ import (
 	"myapp/utils/logger"
 	"myapp/utils/validation"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,6 +24,7 @@ func main() {
 	logger.InitLogger()
 	validation.InitValidation()
 	db := database.SetupDatabase(cfg)
+	migration.MigrateDatabase(db)
 	repo := repository.SetUpRepo(db)
 	redis := cache.NewRedis()
 	jwtManager := jwt.NewJWTManager(cfg)
@@ -33,12 +36,25 @@ func main() {
 	productService := services.NewProductService(repo)
 	productController := controller.NewProductController(productService)
 
+	cartService := services.NewCartService(repo)
+	cartController := controller.NewCartController(cartService)
+
 	r := gin.Default()
+
+	// CORS Setup
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
 
 	routes.SetUpRoutes(
 		r,
 		authController,
 		productController,
+		cartController,
 		jwtManager,
 		repo,
 		redis,

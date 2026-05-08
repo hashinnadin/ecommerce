@@ -1,13 +1,39 @@
 package schema
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
 
 type Product struct {
-	gorm.Model
-	Name        string  `json:"name"`
-	Price       float64 `json:"price"`
-	Category    string  `json:"category"`
-	Description string  `json:"description"`
-	Image       string  `json:"image"`
-	Rating      float32 `json:"rating"` // Default: 0.0
+	ID uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+
+	Title       string `gorm:"not null" json:"title"`
+	Name        string `gorm:"not null" json:"name"`
+	Category    string `gorm:"not null" json:"category"`
+	Description string `gorm:"type:text" json:"description"`
+
+	Price int64 `gorm:"not null" json:"price"`
+
+	Rating float64 `gorm:"default:0" json:"rating"`
+
+	Stock   int  `gorm:"default:0" json:"stock"`
+	InStock bool `gorm:"default:true" json:"in_stock"`
+
+	MainImage         string `json:"main_image"`
+	MainImagePublicID string `json:"main_image_public_id"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+func (p *Product) BeforeCreate(tx *gorm.DB) error {
+
+	p.ID = uuid.New()
+
+	return nil
 }

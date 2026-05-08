@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Cart from "./pages/Cart";
 import Product from "./pages/Products";
+import ProductDetails from "./pages/ProductDetails";
 import Wishlist from "./pages/Wishlist";
 import Payment from "./pages/Payment";
 import Orders from "./pages/Orders";
@@ -61,6 +62,7 @@ function App() {
         {/* PUBLIC */}
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<Product />} />
+        <Route path="/product/:id" element={<ProductDetails />} />
 
         {/* LOGIN */}
         <Route

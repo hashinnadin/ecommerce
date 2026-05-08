@@ -19,12 +19,13 @@ function AdminAddProducts() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
+    title: "",
     name: "",
     price: "",
-    category: "",
     description: "",
-    image: "",
+    stock: "",
   });
+  const [image, setImage] = useState(null);
 
   const [errors, setErrors] = useState({});
   const [isSidebarOpen, setSidebar] = useState(true);
@@ -44,11 +45,12 @@ function AdminAddProducts() {
 
   const validate = () => {
     const err = {};
+    if (!form.title.trim()) err.title = "Product title is required";
     if (!form.name.trim()) err.name = "Product name is required";
     if (!Number(form.price) || Number(form.price) <= 0)
       err.price = "Valid price is required";
-    if (!form.category.trim()) err.category = "Category is required";
-    if (!form.image.trim()) err.image = "Image URL is required";
+    if (!form.stock || Number(form.stock) < 0) err.stock = "Valid stock is required";
+    if (!image) err.main_image = "Main image is required";
     if (!form.description.trim())
       err.description = "Description is required";
     return err;
@@ -61,19 +63,24 @@ function AdminAddProducts() {
     setErrors(val);
     if (Object.keys(val).length > 0) return;
 
-    const newProduct = {
-      id: Date.now().toString(),
-      ...form,
-      price: Number(form.price),
-      rating: 4.5,
-    };
+    const formData = new FormData();
+    formData.append("title", form.title);
+    formData.append("name", form.name);
+    formData.append("description", form.description);
+    formData.append("price", Number(form.price));
+    formData.append("stock", Number(form.stock));
+    formData.append("main_image", image);
 
     try {
-      await API.post("/products", newProduct);
+      await API.post("/admin/products", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
       toast.success("Product added!");
       navigate("/admin/products");
-    } catch {
-      toast.error("Error adding product");
+    } catch (error) {
+      console.error("Upload Error:", error);
+      const errorMsg = error.response?.data?.error || error.message || "Error adding product";
+      toast.error(errorMsg);
     }
   };
 
@@ -186,13 +193,13 @@ function AdminAddProducts() {
         <div className="bg-white rounded-xl shadow border p-6">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="grid md:grid-cols-2 gap-6">
-              {["name", "price", "category", "image"].map((field) => (
+              {["title", "name", "price", "stock"].map((field) => (
                 <div key={field}>
                   <label className="font-medium text-[#5D4737] capitalize">
-                    {field === "image" ? "Image URL *" : field + " *"}
+                    {field + " *"}
                   </label>
                   <input
-                    type={field === "price" ? "number" : "text"}
+                    type={field === "price" || field === "stock" ? "number" : "text"}
                     name={field}
                     value={form[field]}
                     onChange={handleChange}
@@ -205,6 +212,23 @@ function AdminAddProducts() {
                   )}
                 </div>
               ))}
+              
+              <div>
+                <label className="font-medium text-[#5D4737]">
+                  Main Image *
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setImage(e.target.files[0])}
+                  className="w-full mt-2 px-4 py-3 bg-[#F9F8F6] border rounded-lg"
+                />
+                {errors.main_image && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.main_image}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div>

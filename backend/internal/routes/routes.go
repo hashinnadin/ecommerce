@@ -14,6 +14,7 @@ func SetUpRoutes(
 	r *gin.Engine,
 	authController *controller.AuthController,
 	productController *controller.ProductController,
+	cartController *controller.CartController,
 	jwtManager *jwt.Manager,
 	repo *repository.Repository,
 	redisClient *cache.Redis,
@@ -36,6 +37,16 @@ func SetUpRoutes(
 	user.Use(middleware.AuthMiddleware(jwtManager, redisClient))
 	user.GET("/dashboard", authController.Dashboard)
 
+	// Cart routes (Protected by user middleware)
+	cart := user.Group("/cart")
+	{
+		cart.GET("", cartController.GetCart)
+		cart.POST("", cartController.AddToCart)
+		cart.PUT("/:id", cartController.UpdateCartItem)
+		cart.DELETE("/:id", cartController.RemoveFromCart)
+		cart.DELETE("", cartController.ClearCart)
+	}
+
 	// Product routes
 	products := r.Group("/products")
 	{
@@ -45,6 +56,8 @@ func SetUpRoutes(
 
 	// Admin routes
 	admin := r.Group("/admin")
+	admin.Use(middleware.AuthMiddleware(jwtManager, redisClient))
+	admin.Use(middleware.AdminMiddleware())
 	{
 		admin.POST("/products", productController.CreateProduct)
 		admin.PUT("/products/:id", productController.UpdateProduct)

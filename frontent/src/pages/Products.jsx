@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FaShoppingCart, FaHeart, FaFilter, FaSearch } from "react-icons/fa";
 import Footer from "../compenent/Footer";
+import API from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useWishlist } from "../context/WishListcontext";
@@ -33,8 +34,8 @@ function Products() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:3002/products");
-      const data = await res.json();
+      const res = await API.get("/products");
+      const data = res.data;
 
       setProducts(data);
       
