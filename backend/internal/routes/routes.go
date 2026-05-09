@@ -15,6 +15,7 @@ func SetUpRoutes(
 	authController *controller.AuthController,
 	productController *controller.ProductController,
 	cartController *controller.CartController,
+	wishlistController *controller.WishlistController,
 	jwtManager *jwt.Manager,
 	repo *repository.Repository,
 	redisClient *cache.Redis,
@@ -45,6 +46,15 @@ func SetUpRoutes(
 		cart.PUT("/:id", cartController.UpdateCartItem)
 		cart.DELETE("/:id", cartController.RemoveFromCart)
 		cart.DELETE("", cartController.ClearCart)
+	}
+
+	// Wishlist routes (Protected by user middleware)
+	wishlist := user.Group("/wishlist")
+	{
+		wishlist.GET("", wishlistController.GetUserWishlist)
+		wishlist.POST("", wishlistController.AddToWishlist)
+		wishlist.DELETE("/:product_id", wishlistController.RemoveFromWishlist)
+		wishlist.POST("/:product_id/cart", wishlistController.MoveToCart)
 	}
 
 	// Product routes

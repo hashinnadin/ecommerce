@@ -39,6 +39,9 @@ func main() {
 	cartService := services.NewCartService(repo)
 	cartController := controller.NewCartController(cartService)
 
+	wishlistService := services.NewWishlistService(repo)
+	wishlistController := controller.NewWishlistController(wishlistService, cartService)
+
 	r := gin.Default()
 
 	// CORS Setup
@@ -55,6 +58,7 @@ func main() {
 		authController,
 		productController,
 		cartController,
+		wishlistController,
 		jwtManager,
 		repo,
 		redis,

@@ -14,6 +14,7 @@ func MigrateDatabase(db *gorm.DB) {
 		&schema.Product{},
 		&schema.Cart{},
 		&schema.CartItem{},
+		&schema.Wishlist{},
 	)
 	if err != nil {
 		log.Fatalf("Migration failed: %v", err)
