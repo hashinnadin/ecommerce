@@ -16,6 +16,7 @@ func SetUpRoutes(
 	productController *controller.ProductController,
 	cartController *controller.CartController,
 	wishlistController *controller.WishlistController,
+	adminController *controller.AdminController,
 	jwtManager *jwt.Manager,
 	repo *repository.Repository,
 	redisClient *cache.Redis,
@@ -72,5 +73,8 @@ func SetUpRoutes(
 		admin.POST("/products", productController.CreateProduct)
 		admin.PUT("/products/:id", productController.UpdateProduct)
 		admin.DELETE("/products/:id", productController.DeleteProduct)
+
+		admin.PUT("/users/:id", adminController.UpdateUser)
+		admin.PUT("/users/:id/block", adminController.BlockUser)
 	}
 }
