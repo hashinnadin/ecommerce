@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var Log *logrus.Logger
@@ -17,16 +18,15 @@ func InitLogger() *logrus.Logger {
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
 
-	if err := os.MkdirAll("logs", 0755); err != nil {
-		panic(err)
+	logRotator := &lumberjack.Logger{
+		Filename:   "logs/my.log",
+		MaxSize:    10, // megabytes
+		MaxBackups: 3,
+		MaxAge:     28, // days
+		Compress:   true,
 	}
 
-	file, err := os.OpenFile("logs/my.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		panic(err)
-	}
-
-	Log.SetOutput(io.MultiWriter(os.Stdout, file))
+	Log.SetOutput(io.MultiWriter(os.Stdout, logRotator))
 	Log.SetLevel(logrus.InfoLevel)
 	Log.Info("Logger initialised")
 

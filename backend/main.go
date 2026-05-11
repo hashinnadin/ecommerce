@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"myapp/config"
 	"myapp/internal/cache"
@@ -14,6 +15,11 @@ import (
 	"myapp/utils/jwt"
 	"myapp/utils/logger"
 	"myapp/utils/validation"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -68,8 +74,29 @@ func main() {
 		redis,
 	)
 
-	logger.Log.Info("Server running on port", cfg.Server.Port)
-	if err := r.Run(":" + cfg.Server.Port); err != nil {
-		log.Fatal("Server failed to start:", err)
+	srv := &http.Server{
+		Addr:    ":" + cfg.Server.Port,
+		Handler: r,
 	}
+
+	go func() {
+		logger.Log.Info("Server running on port ", cfg.Server.Port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server failed to start: %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	logger.Log.Info("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		logger.Log.Fatal("Server forced to shutdown: ", err)
+	}
+
+	logger.Log.Info("Server exiting")
 }

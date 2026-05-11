@@ -14,6 +14,7 @@ import {
   FaTimes,
   FaTachometerAlt,
 } from "react-icons/fa";
+import API from "../api";
 
 function AdminOrders() {
   const navigate = useNavigate();
@@ -35,18 +36,8 @@ function AdminOrders() {
   /* 🔹 LOAD ALL USER ORDERS */
   const loadOrders = async () => {
     try {
-      const res = await fetch("http://localhost:3002/users");
-      const users = await res.json();
-
-      // 🔥 Collect all orders from all users
-      const allOrders = users.flatMap((user) =>
-        (user.orders || []).map((order) => ({
-          ...order,
-          userId: user.id,
-        }))
-      );
-
-      setOrders(allOrders);
+      const res = await API.get("/admin/orders");
+      setOrders(res.data || []);
     } catch {
       toast.error("Failed to load orders!");
     } finally {
@@ -61,19 +52,8 @@ function AdminOrders() {
   /* 🔹 UPDATE ORDER STATUS */
   const updateStatus = async (orderId, newStatus, userId) => {
     try {
-      const res = await fetch(`http://localhost:3002/users/${userId}`);
-      const user = await res.json();
-
-      const updatedOrders = user.orders.map((o) =>
-        o.orderId === orderId ? { ...o, status: newStatus } : o
-      );
-
-      await fetch(`http://localhost:3002/users/${userId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orders: updatedOrders }),
-      });
-
+      // Assuming a PUT /admin/orders/:id/status endpoint will be added in future
+      await API.put(`/admin/orders/${orderId}/status`, { status: newStatus });
       toast.success("Order status updated!");
       loadOrders();
     } catch {

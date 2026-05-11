@@ -129,61 +129,68 @@ func (s *ProductService) UpdateProduct(
 	req *dto.UpdateProductInput,
 ) (*schema.Product, error) {
 
-	_, err := s.GetProductByID(id)
+	var updatedProduct *schema.Product
+
+	err := s.Repo.Transaction(func(txRepo repository.PgSQLRepository) error {
+		var product schema.Product
+		if err := txRepo.FindByIDWithLock(&product, id); err != nil {
+			return errors.New("product not found")
+		}
+
+		updates := map[string]interface{}{}
+
+		if req.Title != nil {
+			updates["title"] = *req.Title
+		}
+
+		if req.Name != nil {
+			updates["name"] = *req.Name
+		}
+
+		if req.Description != nil {
+			updates["description"] = *req.Description
+		}
+
+		if req.Category != nil {
+			updates["category"] = *req.Category
+		}
+
+		if req.Price != nil {
+			if *req.Price <= 0 {
+				return errors.New("price must be greater than 0")
+			}
+			updates["price"] = *req.Price
+		}
+
+		if req.Stock != nil {
+			if *req.Stock < 0 {
+				return errors.New("stock cannot be negative")
+			}
+			updates["stock"] = *req.Stock
+			updates["in_stock"] = *req.Stock > 0
+		}
+
+		if len(updates) == 0 {
+			return errors.New("no fields provided for update")
+		}
+
+		if err := txRepo.UpdateByFields(&schema.Product{}, id, updates); err != nil {
+			return err
+		}
+
+		if err := txRepo.FindByID(&product, id); err != nil {
+			return err
+		}
+
+		updatedProduct = &product
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	updates := map[string]interface{}{}
-
-	if req.Title != nil {
-		updates["title"] = *req.Title
-	}
-
-	if req.Name != nil {
-		updates["name"] = *req.Name
-	}
-
-	if req.Description != nil {
-		updates["description"] = *req.Description
-	}
-
-	if req.Category != nil {
-		updates["category"] = *req.Category
-	}
-
-	if req.Price != nil {
-
-		if *req.Price <= 0 {
-			return nil, errors.New("price must be greater than 0")
-		}
-
-		updates["price"] = *req.Price
-	}
-
-	if req.Stock != nil {
-
-		if *req.Stock < 0 {
-			return nil, errors.New("stock cannot be negative")
-		}
-
-		updates["stock"] = *req.Stock
-		updates["in_stock"] = *req.Stock > 0
-	}
-
-	if len(updates) == 0 {
-		return nil, errors.New("no fields provided for update")
-	}
-
-	if err := s.Repo.UpdateByFields(
-		&schema.Product{},
-		id,
-		updates,
-	); err != nil {
-		return nil, err
-	}
-
-	return s.GetProductByID(id)
+	return updatedProduct, nil
 }
 
 func (s *ProductService) DeleteProduct(id uuid.UUID) error {

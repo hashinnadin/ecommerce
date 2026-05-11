@@ -56,10 +56,8 @@ function AdminProducts() {
   const deleteProduct = async (id) => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
     try {
-      const res = await fetch(`http://localhost:3002/products/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error();
+      const res = await API.delete(`/admin/products/${id}`);
+      if (res.status !== 200) throw new Error();
       toast.success("Product deleted!");
       loadProducts();
     } catch {

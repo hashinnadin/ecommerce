@@ -9,3 +9,8 @@ type UpdateUserRequest struct {
 type BlockUserRequest struct {
 	IsBlocked bool `json:"is_blocked"` // true for block, false for unblock
 }
+
+type DashboardStatsResponse struct {
+	TotalUsers    int64 `json:"total_users"`
+	TotalProducts int64 `json:"total_products"`
+}

@@ -9,6 +9,8 @@ type PgSQLRepository interface {
 	UpdateByFields(obj interface{}, id interface{}, fields map[string]interface{}) error
 	Delete(obj interface{}, id interface{}) error
 	FindByID(obj interface{}, id interface{}) error
+	FindByIDWithLock(obj interface{}, id interface{}) error
 	FindAll(obj interface{}) error
 	GetDB() *gorm.DB
+	Transaction(fn func(txRepo PgSQLRepository) error) error
 }

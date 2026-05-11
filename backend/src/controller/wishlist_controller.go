@@ -130,22 +130,15 @@ func (c *WishlistController) MoveToCart(ctx *gin.Context) {
 		return
 	}
 
-	// 1. Add to Cart (Default quantity is 1)
-	cartInput := dto.AddToCartInput{
-		ProductID: productID.String(),
-		Quantity:  1,
-	}
-	err = c.CartService.AddToCart(userID, &cartInput)
+	err = c.WishlistService.MoveToCart(userID, productID, c.CartService)
 	if err != nil {
-		// If product is not found or out of stock
+		if err.Error() == "product not found in wishlist" {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	// 2. Remove from Wishlist
-	// We ignore the error here because if it wasn't in the wishlist to begin with, 
-	// it's fine, the item is still successfully in the cart.
-	_ = c.WishlistService.RemoveFromWishlist(userID, productID)
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "product moved to cart successfully"})
 }

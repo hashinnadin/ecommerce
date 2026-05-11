@@ -74,7 +74,12 @@ func SetUpRoutes(
 		admin.PUT("/products/:id", productController.UpdateProduct)
 		admin.DELETE("/products/:id", productController.DeleteProduct)
 
+		admin.GET("/users", adminController.GetUsers)
 		admin.PUT("/users/:id", adminController.UpdateUser)
 		admin.PUT("/users/:id/block", adminController.BlockUser)
+
+		admin.GET("/orders", adminController.GetOrders)
+		
+		admin.GET("/dashboard", adminController.GetDashboardStats)
 	}
 }

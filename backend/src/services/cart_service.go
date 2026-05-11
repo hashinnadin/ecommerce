@@ -20,6 +20,10 @@ func NewCartService(repo repository.PgSQLRepository) *CartService {
 	}
 }
 
+func (s *CartService) WithRepo(repo repository.PgSQLRepository) *CartService {
+	return &CartService{Repo: repo}
+}
+
 // GetOrCreateCart retrieves a user's cart, creating one if it doesn't exist
 func (s *CartService) GetOrCreateCart(userID uuid.UUID) (*schema.Cart, error) {
 	var cart schema.Cart
@@ -62,22 +66,28 @@ func (s *CartService) AddToCart(userID uuid.UUID, input *dto.AddToCartInput) err
 		return errors.New("not enough stock available")
 	}
 
-	// 2. Check if the item is already in the cart
+	// 2. Check if the item is already in the cart, including soft-deleted ones
 	var existingItem schema.CartItem
-	err = s.Repo.GetDB().Where("cart_id = ? AND product_id = ?", cart.ID, product.ID).First(&existingItem).Error
+	err = s.Repo.GetDB().Unscoped().Where("cart_id = ? AND product_id = ?", cart.ID, product.ID).First(&existingItem).Error
 
 	if err == nil {
-		// Item exists in cart, update quantity
-		newQuantity := existingItem.Quantity + input.Quantity
+		// Item exists in cart, could be active or deleted
+		newQuantity := input.Quantity
+		if !existingItem.DeletedAt.Valid {
+			// Item is active, update quantity
+			newQuantity += existingItem.Quantity
+		}
 
 		if product.Stock < newQuantity {
 			return errors.New("not enough stock available for the requested total quantity")
 		}
 
-		return s.Repo.UpdateByFields(&schema.CartItem{}, existingItem.ID, map[string]interface{}{
-			"quantity": newQuantity,
-			"price":    product.Price, // Update price to latest
-		})
+		// Update quantity, price, and restore if it was soft-deleted
+		return s.Repo.GetDB().Unscoped().Model(&existingItem).Updates(map[string]interface{}{
+			"quantity":   newQuantity,
+			"price":      product.Price, // Update price to latest
+			"deleted_at": nil,
+		}).Error
 	} else if errors.Is(err, gorm.ErrRecordNotFound) {
 		// Item does not exist in cart, create new
 		newItem := schema.CartItem{

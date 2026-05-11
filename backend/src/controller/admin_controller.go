@@ -62,3 +62,30 @@ func (c *AdminController) BlockUser(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, gin.H{"message": "user " + action + " successfully"})
 }
+
+func (c *AdminController) GetUsers(ctx *gin.Context) {
+	users, err := c.AdminService.GetUsers()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, users)
+}
+
+func (c *AdminController) GetOrders(ctx *gin.Context) {
+	orders, err := c.AdminService.GetOrders()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, orders)
+}
+
+func (c *AdminController) GetDashboardStats(ctx *gin.Context) {
+	stats, err := c.AdminService.GetDashboardStats()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, stats)
+}

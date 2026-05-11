@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../api";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import {
@@ -21,26 +21,20 @@ function Dashboard() {
   });
 
   const [recentOrders, setRecentOrders] = useState([]);
-  function ComponentName() {
-  const navigate = useNavigate();
-  
   useEffect(() => {
     const admin = JSON.parse(localStorage.getItem("admin"));
     if (!admin) {
       toast.error("Admin login required");
       navigate("/login");
+      return;
     }
-  }, [navigate]);
-  
-}
 
-  useEffect(() => {
     (async () => {
       try {
         const [u, p, o] = await Promise.all([
-          axios.get("http://localhost:3002/users"),
-          axios.get("http://localhost:3002/products"),
-          axios.get("http://localhost:3002/orders"),
+          API.get("/admin/users"),
+          API.get("/products"),
+          API.get("/admin/orders"),
         ]);
 
         const users = u.data || [];
@@ -70,13 +64,14 @@ function Dashboard() {
         });
 
         setRecentOrders(sorted);
-      } catch {
+      } catch (err) {
+        console.error(err);
         toast.error("Failed to load dashboard data");
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [navigate]);
 
   const formatDate = (iso) =>
     iso

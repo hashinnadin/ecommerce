@@ -17,6 +17,7 @@ import {
   FaLock,
   FaUnlock,
 } from "react-icons/fa";
+import API from "../api";
 
 function AdminUsers() {
   const navigate = useNavigate();
@@ -39,9 +40,8 @@ function AdminUsers() {
   /* 🔹 LOAD USERS */
   const loadUsers = async () => {
     try {
-      const res = await fetch("http://localhost:3002/users");
-      const data = await res.json();
-      setUsers(data);
+      const res = await API.get("/admin/users");
+      setUsers(res.data || []);
     } catch {
       toast.error("Failed to load users!");
     } finally {
@@ -54,19 +54,15 @@ function AdminUsers() {
   }, []);
 
   /* 🔄 BLOCK / UNBLOCK */
-  const toggleUserStatus = async (id, status) => {
-    const newStatus = status === "active" ? "blocked" : "active";
+  const toggleUserStatus = async (id, currentStatus) => {
+    const isCurrentlyBlocked = currentStatus === "blocked" || currentStatus === true;
+    const newStatus = isCurrentlyBlocked ? "unblocked" : "blocked";
+    
     if (!window.confirm(`Are you sure you want to ${newStatus} this user?`))
       return;
 
     try {
-      const res = await fetch(`http://localhost:3002/users/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (!res.ok) throw new Error();
+      await API.put(`/admin/users/${id}/block`, { IsBlocked: !isCurrentlyBlocked });
       toast.success(`User ${newStatus} successfully`);
       loadUsers();
     } catch {
@@ -75,11 +71,13 @@ function AdminUsers() {
   };
 
   /* 🔍 FILTER */
-  const filteredUsers = users.filter((u) =>
-    [u?.username, u?.email].some((v) =>
-      v?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  const filteredUsers = users.filter((u) => {
+    const name = u?.Name || u?.username || "";
+    const email = u?.Email || u?.email || "";
+    return [name, email].some((v) =>
+      v.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
   const logoutAdmin = () => {
     localStorage.removeItem("admin");
@@ -225,15 +223,15 @@ function AdminUsers() {
                           <FaUser />
                         </div>
                       </td>
-                      <td className="p-4">{u.username}</td>
-                      <td className="p-4">{u.email}</td>
+                      <td className="p-4">{u.Name || u.username}</td>
+                      <td className="p-4">{u.Email || u.email}</td>
                       <td className="p-4">
                         <span className="bg-[#F9F8F6] px-2 rounded text-sm">
-                          {u.password}
+                          {u.Password ? "****" : u.password}
                         </span>
                       </td>
                       <td className="p-4">
-                        {u.status === "blocked" ? (
+                        {u.IsBlocked === true || u.status === "blocked" ? (
                           <span className="text-red-600 flex items-center gap-1">
                             <FaBan /> Blocked
                           </span>
@@ -247,16 +245,16 @@ function AdminUsers() {
                       <td className="p-4">
                         <button
                           onClick={() =>
-                            toggleUserStatus(u.id, u.status || "active")
+                            toggleUserStatus(u.ID || u.id, u.IsBlocked !== undefined ? u.IsBlocked : u.status)
                           }
                           className={`px-4 py-2 rounded-lg text-white flex items-center gap-2
                           ${
-                            u.status === "blocked"
+                            u.IsBlocked === true || u.status === "blocked"
                               ? "bg-green-500"
                               : "bg-red-500"
                           }`}
                         >
-                          {u.status === "blocked" ? (
+                          {u.IsBlocked === true || u.status === "blocked" ? (
                             <>
                               <FaUnlock /> Unblock
                             </>

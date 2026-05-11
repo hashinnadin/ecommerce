@@ -48,3 +48,34 @@ func (s *AdminService) BlockUser(userID uuid.UUID, isBlocked bool) error {
 
 	return s.Repo.GetDB().Model(&user).Update("is_blocked", isBlocked).Error
 }
+
+func (s *AdminService) GetUsers() ([]schema.User, error) {
+	var users []schema.User
+	if err := s.Repo.GetDB().Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (s *AdminService) GetOrders() ([]interface{}, error) {
+	// Orders schema is not implemented yet, returning empty list for now
+	return []interface{}{}, nil
+}
+
+func (s *AdminService) GetDashboardStats() (*dto.DashboardStatsResponse, error) {
+	var totalUsers int64
+	var totalProducts int64
+
+	if err := s.Repo.GetDB().Model(&schema.User{}).Count(&totalUsers).Error; err != nil {
+		return nil, err
+	}
+
+	if err := s.Repo.GetDB().Model(&schema.Product{}).Count(&totalProducts).Error; err != nil {
+		return nil, err
+	}
+
+	return &dto.DashboardStatsResponse{
+		TotalUsers:    totalUsers,
+		TotalProducts: totalProducts,
+	}, nil
+}
