@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"myapp/internal/cache"
+	"myapp/src/repository"
 	"myapp/utils/constant"
 	"myapp/utils/jwt"
 	"strings"
@@ -9,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AuthMiddleware(jwtManager *jwt.Manager, redisClient *cache.Redis) gin.HandlerFunc {
+func AuthMiddleware(jwtManager *jwt.Manager, redisClient *cache.Redis, repo *repository.Repository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		authHeader := c.GetHeader("Authorization")
@@ -47,6 +48,19 @@ func AuthMiddleware(jwtManager *jwt.Manager, redisClient *cache.Redis) gin.Handl
 			c.Abort()
 			return
 		}
+
+		// Check if user is blocked in database
+		var userStatus struct {
+			IsBlocked bool `gorm:"column:is_blocked"`
+		}
+		if err := repo.DB.Table("users").Select("is_blocked").Where("id = ?", userID).First(&userStatus).Error; err == nil {
+			if userStatus.IsBlocked {
+				c.JSON(constant.UNAUTHORIZED, gin.H{"error": "Your account has been suspended"})
+				c.Abort()
+				return
+			}
+		}
+
 		role, _ := claims["role"].(string)
 		c.Set("user_id", userID)
 		c.Set("role", role)

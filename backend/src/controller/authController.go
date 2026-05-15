@@ -145,6 +145,31 @@ func (a *AuthController) Dashboard(c *gin.Context) {
 	})
 }
 
+func (a *AuthController) Profile(c *gin.Context) {
+	userID, _ := c.Get("user_id")
+	user, err := a.authService.GetUserByID(userID.(string))
+	if err != nil {
+		c.JSON(constant.INTERNALSERVERERROR, gin.H{"error": "failed to get user profile"})
+		return
+	}
+
+	// Format response to match Payment.jsx expectation of nested address
+	c.JSON(constant.SUCCESS, gin.H{
+		"id":    user.ID,
+		"name":  user.Name,
+		"email": user.Email,
+		"address": gin.H{
+			"fullName": user.FullName,
+			"mobile":   user.Mobile,
+			"house":    user.House,
+			"street":   user.Street,
+			"city":     user.City,
+			"pincode":  user.Pincode,
+			"state":    user.State,
+		},
+	})
+}
+
 func (a *AuthController) ForgotPassword(c *gin.Context) {
 	var req dto.ForgotPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

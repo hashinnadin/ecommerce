@@ -1,43 +1,110 @@
 @import "tailwindcss";
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+/* 🔹 PREMIUM DESIGN SYSTEM */
+:root {
+  --primary: #F43F5E; /* Rose 500 */
+  --primary-dark: #E11D48; /* Rose 600 */
+  --secondary: #8B5CF6; /* Violet 500 */
+  --accent: #F59E0B; /* Amber 500 */
+  --bg-main: #FDFCFB;
+  --glass: rgba(255, 255, 255, 0.7);
+}
+
+@layer base {
+  body {
+    @apply bg-[#FDFCFB] text-gray-900;
+    font-family: 'Outfit', sans-serif;
   }
 }
 
-.animate-slideDown {
-  animation: slideDown 0.3s ease-out;
+/* 🔹 UTILITIES */
+.glass-morphism {
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-violet-600;
+}
+
+.shadow-premium {
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
+}
+
+.shadow-premium-hover {
+  @apply transition-all duration-300 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.12)] hover:-translate-y-1;
+}
+
+/* 🔹 ANIMATIONS */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
 }
 
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  -webkit-line-clamp: 2;
 }
 
 .bg-pattern {
   background-image: 
-    radial-gradient(#D9CFC7 1px, transparent 1px),
-    radial-gradient(#D9CFC7 1px, transparent 1px);
+    radial-gradient(#E5E7EB 1px, transparent 1px),
+    radial-gradient(#E5E7EB 1px, transparent 1px);
   background-size: 40px 40px;
   background-position: 0 0, 20px 20px;
 }
-@keyframes slideIn {
-  from {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+
+.perspective-1000 {
+  perspective: 1000px;
 }
 
-.animate-slideIn {
-  animation: slideIn 0.3s ease-out;
+
+/* 🔹 PREMIUM TOAST DESIGN */
+.Toastify__toast {
+  @apply rounded-[1.5rem] p-4 font-black shadow-[0_10px_30px_-10px_rgba(0,0,0,0.08)] border border-white/50 backdrop-blur-xl bg-white/80 text-gray-900;
 }
+
+.Toastify__toast--success {
+  @apply border-emerald-100;
+}
+
+.Toastify__toast--success .Toastify__toast-icon {
+  @apply text-emerald-500;
+}
+
+.Toastify__toast--error {
+  @apply border-rose-100;
+}
+
+.Toastify__toast--error .Toastify__toast-icon {
+  @apply text-rose-500;
+}
+
+.Toastify__progress-bar--success {
+  @apply bg-emerald-500;
+}
+
+.Toastify__progress-bar--error {
+  @apply bg-rose-500;
+}
+

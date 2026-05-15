@@ -1,195 +1,90 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { 
   FaHome, 
   FaBox, 
   FaShoppingCart, 
   FaUsers, 
   FaSignOutAlt, 
-  FaBars, 
-  FaTimes,
-  FaPlus,
-  FaEdit,
-  FaEye
+  FaThLarge,
+  FaChartLine,
+  FaBars,
+  FaTimes
 } from "react-icons/fa";
-import { toast } from "react-toastify";
-import logo from "../assets/logo.png";
+import { useAuth } from "../context/AuthContext";
 
 function AdminNavbar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout, admin } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [open, setOpen] = useState(false);
 
-  /* 🔐 ADMIN AUTH CHECK */
   useEffect(() => {
-    const admin = JSON.parse(localStorage.getItem("admin"));
     if (!admin) {
-      toast.error("Admin login required");
       navigate("/login");
     }
-  }, [navigate]);
+  }, [admin, navigate]);
 
-  const logoutAdmin = () => {
-    localStorage.removeItem("admin");
-    navigate("/login");
-  };
-
-  const isActive = (path) => location.pathname === path;
-
-  const mainMenuItems = [
-    { 
-      path: "/admin", 
-      label: "Dashboard", 
-      icon: <FaHome />,
-      description: "Overview & analytics"
-    },
-    { 
-      path: "/admin/products", 
-      label: "Products", 
-      icon: <FaBox />,
-      description: "Manage product catalog"
-    },
-    { 
-      path: "/admin/orders", 
-      label: "Orders", 
-      icon: <FaShoppingCart />,
-      description: "View & update orders"
-    },
-    { 
-      path: "/admin/users", 
-      label: "Users", 
-      icon: <FaUsers />,
-      description: "Registered users"
-    },
-  ];
-
-  const productSubMenu = [
-    { path: "/admin/products/add", label: "Add Product", icon: <FaPlus /> },
-    { path: "/admin/products", label: "View All", icon: <FaEye /> },
-    { path: "/admin/products/edit", label: "Edit Products", icon: <FaEdit /> }
+  const menuItems = [
+    { path: "/admin", label: "Dashboard", icon: <FaChartLine /> },
+    { path: "/admin/products", label: "Inventory", icon: <FaBox /> },
+    { path: "/admin/orders", label: "Orders", icon: <FaShoppingCart /> },
+    { path: "/admin/users", label: "Customers", icon: <FaUsers /> },
+    { path: "/", label: "Store Front", icon: <FaHome /> },
   ];
 
   return (
     <>
-      {/* MOBILE TOGGLE */}
-      <button
-        className="lg:hidden fixed top-4 left-4 z-50 text-2xl text-[#5D4737] bg-white p-2 rounded-lg shadow-md"
+      {/* Mobile Toggle */}
+      <button 
+        className="lg:hidden fixed top-4 right-4 z-[110] text-white bg-rose-500 p-3 rounded-2xl shadow-xl" 
         onClick={() => setOpen(!open)}
       >
-        {open ? <FaTimes /> : <FaBars />}
+        {open ? <FaTimes size={20} /> : <FaBars size={20} />}
       </button>
 
-      {/* SIDEBAR */}
-      <aside className={`
-        fixed top-0 left-0 h-screen bg-white border-r border-[#D9CFC7] 
-        shadow-lg z-40 transition-all duration-300
-        ${isCollapsed ? "w-20" : "w-64"}
-        ${open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-      `}>
-        <div className="p-6 border-b border-[#EFE9E3]">
-          <div className="flex items-center justify-between">
-            <div 
-              className={`flex items-center gap-3 cursor-pointer transition-all duration-300 ${
-                isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
-              }`}
-              onClick={() => navigate("/admin")}
-            >
-              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#C9B59C] p-1">
-                <img
-                  src={logo}
-                  alt="admin"
-                  className="w-full h-full rounded-full object-cover"
-                />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-[#5D4737]">
-                  Admin Panel
-                </h1>
-                <p className="text-xs text-[#8B7355]">
-                  Management
-                </p>
-              </div>
-            </div>
-
-            <button
-              className="hidden lg:block text-[#C9B59C] hover:text-[#B8A48B]"
-              onClick={() => setIsCollapsed(!isCollapsed)}
-            >
-              {isCollapsed ? <FaBars /> : <FaTimes />}
-            </button>
+      <aside className={`fixed top-0 left-0 h-screen bg-gray-900 text-gray-400 transition-all duration-300 z-[100] shadow-2xl ${isCollapsed ? "w-20" : "w-72"} ${open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
+        <div className="p-8 flex items-center gap-4 border-b border-gray-800">
+          <div className="w-10 h-10 bg-rose-500 rounded-2xl flex items-center justify-center text-white shadow-lg cursor-pointer hover:scale-105 transition-transform" onClick={() => setIsCollapsed(!isCollapsed)}>
+            <FaThLarge size={20} />
           </div>
+          {!isCollapsed && <span className="text-xl font-black text-white tracking-tight">Admin<span className="text-rose-500">Hub</span></span>}
         </div>
 
-        {/* MENU */}
-        <nav className="p-4 space-y-2 overflow-y-auto h-[calc(100vh-120px)]">
-          {mainMenuItems.map((item) => (
-            <div key={item.path}>
-              <button
-                onClick={() => {
-                  navigate(item.path);
-                  if (window.innerWidth < 1024) setOpen(false);
-                }}
-                className={`
-                  w-full flex items-center gap-3 p-3 rounded-lg transition-all
-                  ${
-                    isActive(item.path)
-                      ? "bg-gradient-to-r from-[#C9B59C] to-[#B8A48B] text-white shadow-md"
-                      : "text-[#5D4737] hover:bg-[#F9F8F6]"
-                  }
-                `}
-              >
-                <span className="text-xl">{item.icon}</span>
-                <div className={`${isCollapsed ? "hidden" : "block"} text-left`}>
-                  <span className="font-medium block">{item.label}</span>
-                  <span className="text-xs opacity-80">
-                    {item.description}
-                  </span>
-                </div>
-              </button>
-
-              {/* PRODUCT SUBMENU */}
-              {item.path === "/admin/products" &&
-                isActive(item.path) &&
-                !isCollapsed && (
-                  <div className="ml-10 mt-2 space-y-1 border-l-2 border-[#EFE9E3] pl-4">
-                    {productSubMenu.map((sub) => (
-                      <button
-                        key={sub.path}
-                        onClick={() => navigate(sub.path)}
-                        className="w-full flex items-center gap-2 p-2 text-sm text-[#8B7355] hover:text-[#5D4737]"
-                      >
-                        {sub.icon}
-                        {sub.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-            </div>
-          ))}
-
-          {/* LOGOUT */}
-          <div className="pt-6 border-t border-[#EFE9E3]">
-            <button
-              onClick={logoutAdmin}
-              className="w-full flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-red-400 to-red-500 text-white font-semibold"
+        <nav className="p-4 mt-6 space-y-2">
+          {menuItems.map((item) => (
+            <Link 
+              key={item.path} 
+              to={item.path} 
+              onClick={() => setOpen(false)}
+              className={`flex items-center gap-4 px-5 py-4 rounded-2xl transition-all ${
+                location.pathname === item.path 
+                  ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20" 
+                  : "hover:bg-gray-800 hover:text-white"
+              }`}
             >
-              <FaSignOutAlt />
-              {!isCollapsed && "Logout"}
-            </button>
-          </div>
+              <span className="text-xl">{item.icon}</span>
+              {!isCollapsed && <span className="font-bold">{item.label}</span>}
+            </Link>
+          ))}
         </nav>
+
+        <div className="absolute bottom-8 left-0 w-full px-4">
+          <button 
+            onClick={logout} 
+            className={`flex items-center gap-4 px-5 py-4 w-full rounded-2xl text-rose-400 hover:bg-rose-500/10 transition-all ${isCollapsed && "justify-center"}`}
+          >
+            <FaSignOutAlt size={20} />
+            {!isCollapsed && <span className="font-bold">Sign Out</span>}
+          </button>
+        </div>
       </aside>
 
-      {/* OVERLAY */}
-      {open && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-          onClick={() => setOpen(false)}
-        />
-      )}
+      {open && <div className="fixed inset-0 bg-black/60 z-[105] lg:hidden backdrop-blur-sm transition-all" onClick={() => setOpen(false)} />}
     </>
   );
 }
 
 export default AdminNavbar;
+

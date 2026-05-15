@@ -1,271 +1,251 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
-  FaArrowLeft,
-  FaSave,
-  FaBars,
-  FaTimes,
-  FaTachometerAlt,
-  FaHome,
-  FaBox,
-  FaShoppingCart,
-  FaUsers,
-  FaSignOutAlt,
-} from "react-icons/fa";
+  ArrowLeft, Save, CloudUpload, Sparkles, Box, Info, Image as ImageIcon, CheckCircle, ChevronRight
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import API from "../api";
+import AdminNavbar from "./AdminNavbar";
 
 function AdminAddProducts() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState(null);
 
-  const [form, setForm] = useState({
-    title: "",
+  const [product, setProduct] = useState({
     name: "",
+    title: "",
+    category: "",
     price: "",
-    description: "",
     stock: "",
+    description: "",
   });
-  const [image, setImage] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
 
-  const [errors, setErrors] = useState({});
-  const [isSidebarOpen, setSidebar] = useState(true);
-  const [isMobileMenuOpen, setMobile] = useState(false);
+  const handleChange = (e) => {
+    setProduct({ ...product, [e.target.name]: e.target.value });
+  };
 
-  /* 🔐 ADMIN AUTH CHECK */
-  useEffect(() => {
-    const admin = JSON.parse(localStorage.getItem("admin"));
-    if (!admin) {
-      toast.error("Admin login required");
-      navigate("/login");
+  const handleImage = (e) => {
+    const file = e.target.files[0];
+    setImageFile(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result);
+      reader.readAsDataURL(file);
     }
-  }, [navigate]);
-
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
-
-  const validate = () => {
-    const err = {};
-    if (!form.title.trim()) err.title = "Product title is required";
-    if (!form.name.trim()) err.name = "Product name is required";
-    if (!Number(form.price) || Number(form.price) <= 0)
-      err.price = "Valid price is required";
-    if (!form.stock || Number(form.stock) < 0) err.stock = "Valid stock is required";
-    if (!image) err.main_image = "Main image is required";
-    if (!form.description.trim())
-      err.description = "Description is required";
-    return err;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const val = validate();
-    setErrors(val);
-    if (Object.keys(val).length > 0) return;
-
-    const formData = new FormData();
-    formData.append("title", form.title);
-    formData.append("name", form.name);
-    formData.append("description", form.description);
-    formData.append("price", Number(form.price));
-    formData.append("stock", Number(form.stock));
-    formData.append("main_image", image);
-
     try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("name", product.name);
+      formData.append("title", product.title || product.name);
+      formData.append("category", product.category);
+      formData.append("price", product.price);
+      formData.append("stock", product.stock);
+      formData.append("description", product.description);
+      if (imageFile) formData.append("image", imageFile);
+
       await API.post("/admin/products", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
+        headers: { "Content-Type": "multipart/form-data" },
       });
-      toast.success("Product added!");
+
+      toast.success("Product added successfully!");
       navigate("/admin/products");
-    } catch (error) {
-      console.error("Upload Error:", error);
-      const errorMsg = error.response?.data?.error || error.message || "Error adding product";
-      toast.error(errorMsg);
+    } catch {
+      toast.error("Error adding product!");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("admin");
-    navigate("/login");
-  };
-
-  const menu = [
-    { path: "/admin", label: "Dashboard", icon: <FaHome /> },
-    { path: "/admin/products", label: "Products", icon: <FaBox /> },
-    { path: "/admin/orders", label: "Orders", icon: <FaShoppingCart /> },
-    { path: "/admin/users", label: "Users", icon: <FaUsers /> },
-  ];
-
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-[#F9F8F6] to-[#EFE9E3]">
-      {/* SIDEBAR */}
-      <aside
-        className={`fixed top-0 left-0 h-screen bg-white border-r shadow-xl z-40 transition-all
-        ${isSidebarOpen ? "w-64" : "w-20"}
-        ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
-      >
-        <div className="p-6 border-b flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex justify-center items-center rounded-full bg-gradient-to-r from-[#C9B59C] to-[#B8A48B] text-white">
-              <FaTachometerAlt />
-            </div>
-            {isSidebarOpen && (
-              <div>
-                <h1 className="font-bold text-lg text-[#5D4737]">
-                  Admin Panel
-                </h1>
-                <p className="text-xs text-[#8B7355]">Add Product</p>
+    <div className="min-h-screen bg-[#FDFCFB] flex">
+      <AdminNavbar />
+
+      {/* dY"1 MAIN CONTENT */}
+      <main className="flex-1 lg:ml-72 p-6 md:p-12 mt-16 lg:mt-0 relative">
+        <header className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-8 mb-16 relative z-10">
+          <div>
+            <nav className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4">
+                <Box size={12} /> Creator Studio
+            </nav>
+            <h1 className="text-5xl lg:text-7xl font-black text-gray-900 tracking-tighter leading-none mb-4">Add <span className="text-gradient">Creation</span></h1>
+            <p className="text-gray-500 font-bold text-lg">Introduce a new handcrafted masterpiece to your artisan collection.</p>
+          </div>
+          
+          <button 
+            onClick={() => navigate("/admin/products")}
+            className="group px-8 py-4 bg-white border border-gray-100 rounded-[1.5rem] font-black text-xs uppercase tracking-widest text-gray-400 hover:text-rose-500 transition-all flex items-center gap-3 shadow-premium active:scale-95"
+          >
+            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back to Catalog
+          </button>
+        </header>
+
+        <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-12 relative z-10">
+          {/* LEFT: FORM FIELDS */}
+          <div className="lg:col-span-2 space-y-12">
+            <motion.section 
+                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                className="bg-white/70 backdrop-blur-xl p-10 rounded-[4rem] shadow-premium border border-white"
+            >
+              <div className="flex items-center gap-4 mb-12">
+                  <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center">
+                    <Info size={24} />
+                  </div>
+                  <h2 className="text-2xl font-black text-gray-900 tracking-tight">Essential Details</h2>
               </div>
-            )}
+              
+              <div className="space-y-10">
+                  <div className="grid md:grid-cols-2 gap-10">
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Display Title</label>
+                      <input 
+                        name="name" 
+                        required 
+                        onChange={handleChange} 
+                        placeholder="e.g. Belgian Truffle Cake"
+                        className="w-full px-8 py-5 bg-gray-50 border border-transparent rounded-[2rem] focus:bg-white focus:border-rose-100 focus:outline-none transition-all font-bold text-gray-900 shadow-inner" 
+                      />
+                    </div>
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Artisan Category</label>
+                      <select 
+                        name="category" 
+                        required 
+                        onChange={handleChange} 
+                        className="w-full px-8 py-5 bg-gray-50 border border-transparent rounded-[2rem] focus:bg-white focus:border-rose-100 focus:outline-none transition-all font-bold text-gray-900 shadow-inner appearance-none"
+                      >
+                        <option value="">Select a category...</option>
+                        <option value="Classic">Classic Series</option>
+                        <option value="Premium">Premium Collection</option>
+                        <option value="Fruit">Fresh Fruit</option>
+                        <option value="Seasonal">Seasonal Special</option>
+                        <option value="Chocolate">Pure Chocolate</option>
+                        <option value="Eggless">Eggless Gourmet</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-10">
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Price Value (₹)</label>
+                      <div className="relative">
+                        <span className="absolute left-8 top-1/2 -translate-y-1/2 font-black text-gray-400">₹</span>
+                        <input 
+                            name="price" 
+                            type="number" 
+                            required 
+                            onChange={handleChange} 
+                            placeholder="0.00"
+                            className="w-full pl-12 pr-8 py-5 bg-gray-50 border border-transparent rounded-[2rem] focus:bg-white focus:border-rose-100 focus:outline-none transition-all font-black text-gray-900 shadow-inner" 
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Initial Inventory</label>
+                      <input 
+                        name="stock" 
+                        type="number" 
+                        required 
+                        onChange={handleChange} 
+                        placeholder="Quantity in units"
+                        className="w-full px-8 py-5 bg-gray-50 border border-transparent rounded-[2rem] focus:bg-white focus:border-rose-100 focus:outline-none transition-all font-bold text-gray-900 shadow-inner" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Story & Description</label>
+                    <textarea 
+                        name="description" 
+                        rows="6" 
+                        required 
+                        onChange={handleChange} 
+                        placeholder="Describe the flavors, texture and the craft behind this creation..."
+                        className="w-full px-8 py-6 bg-gray-50 border border-transparent rounded-[2.5rem] focus:bg-white focus:border-rose-100 focus:outline-none transition-all font-bold text-gray-900 shadow-inner resize-none leading-relaxed" 
+                    />
+                  </div>
+              </div>
+            </motion.section>
           </div>
 
-          <button
-            className="hidden lg:block"
-            onClick={() => setSidebar(!isSidebarOpen)}
-          >
-            {isSidebarOpen ? <FaTimes /> : <FaBars />}
-          </button>
-        </div>
-
-        <nav className="p-4 space-y-2">
-          {menu.map((m) => (
-            <button
-              key={m.path}
-              onClick={() => navigate(m.path)}
-              className={`w-full flex gap-3 items-center p-3 rounded-lg transition
-              ${
-                window.location.pathname === m.path
-                  ? "bg-gradient-to-r from-[#C9B59C] to-[#B8A48B] text-white"
-                  : "hover:bg-[#F9F8F6]"
-              }`}
+          {/* RIGHT: MEDIA & SUBMIT */}
+          <div className="space-y-12">
+            <motion.section 
+                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+                className="bg-white/70 backdrop-blur-xl p-10 rounded-[4rem] shadow-premium border border-white"
             >
-              <span className="text-xl">{m.icon}</span>
-              {isSidebarOpen && m.label}
-            </button>
-          ))}
-        </nav>
+              <div className="flex items-center gap-4 mb-10">
+                  <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center">
+                    <ImageIcon size={24} />
+                  </div>
+                  <h2 className="text-2xl font-black text-gray-900 tracking-tight">Cover Art</h2>
+              </div>
 
-        <div className="p-4 border-t absolute bottom-0 w-full">
-          <button
-            onClick={logout}
-            className="w-full flex items-center justify-center gap-3 p-3 bg-red-500 text-white rounded-lg"
-          >
-            <FaSignOutAlt /> {isSidebarOpen && "Logout"}
-          </button>
-        </div>
-      </aside>
-
-      {/* MOBILE MENU */}
-      <button
-        className="lg:hidden fixed top-4 left-4 z-50 text-2xl bg-white p-2 rounded shadow"
-        onClick={() => setMobile(!isMobileMenuOpen)}
-      >
-        {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
-      </button>
-
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-          onClick={() => setMobile(false)}
-        ></div>
-      )}
-
-      {/* MAIN */}
-      <main
-        className={`${
-          isSidebarOpen ? "lg:ml-64" : "lg:ml-20"
-        } transition-all p-8 w-full`}
-      >
-        <button
-          onClick={() => navigate("/admin/products")}
-          className="flex items-center gap-2 text-[#5D4737]"
-        >
-          <FaArrowLeft /> Back to Products
-        </button>
-
-        <div className="bg-white p-6 rounded-xl shadow border mt-4 mb-8">
-          <h1 className="text-3xl font-bold text-[#5D4737]">
-            Add New Product
-          </h1>
-          <p className="text-[#8B7355]">Fill in the details</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow border p-6">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div className="grid md:grid-cols-2 gap-6">
-              {["title", "name", "price", "stock"].map((field) => (
-                <div key={field}>
-                  <label className="font-medium text-[#5D4737] capitalize">
-                    {field + " *"}
-                  </label>
-                  <input
-                    type={field === "price" || field === "stock" ? "number" : "text"}
-                    name={field}
-                    value={form[field]}
-                    onChange={handleChange}
-                    className="w-full mt-2 px-4 py-3 bg-[#F9F8F6] border rounded-lg"
-                  />
-                  {errors[field] && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors[field]}
-                    </p>
+              <div className="relative group cursor-pointer">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleImage} 
+                  className="absolute inset-0 opacity-0 z-10 cursor-pointer" 
+                />
+                <div className={`aspect-square rounded-[3rem] border-4 border-dashed transition-all duration-500 flex flex-col items-center justify-center text-center p-8 overflow-hidden ${preview ? 'border-emerald-500 bg-emerald-50/10' : 'border-gray-100 bg-gray-50/50 group-hover:bg-rose-50/50 group-hover:border-rose-200'}`}>
+                  {preview ? (
+                    <motion.img initial={{ scale: 1.1 }} animate={{ scale: 1 }} src={preview} className="w-full h-full object-cover rounded-[2.5rem]" alt="Preview" />
+                  ) : (
+                    <>
+                      <div className="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center text-rose-500 mb-6 group-hover:scale-110 transition-transform duration-500">
+                        <CloudUpload size={40} />
+                      </div>
+                      <p className="text-gray-900 font-black text-lg mb-2">Upload Visuals</p>
+                      <p className="text-gray-400 text-[10px] uppercase font-black tracking-widest max-w-[150px] mx-auto leading-relaxed">Artisan photos enhance trust. (MAX 2MB)</p>
+                    </>
                   )}
                 </div>
-              ))}
-              
-              <div>
-                <label className="font-medium text-[#5D4737]">
-                  Main Image *
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setImage(e.target.files[0])}
-                  className="w-full mt-2 px-4 py-3 bg-[#F9F8F6] border rounded-lg"
-                />
-                {errors.main_image && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.main_image}
-                  </p>
-                )}
               </div>
-            </div>
+            </motion.section>
 
-            <div>
-              <label className="font-medium text-[#5D4737]">
-                Description *
-              </label>
-              <textarea
-                name="description"
-                rows="4"
-                value={form.description}
-                onChange={handleChange}
-                className="w-full mt-2 px-4 py-3 bg-[#F9F8F6] border rounded-lg"
-              />
-              {errors.description && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.description}
-                </p>
-              )}
+            <div className="space-y-6">
+                <button 
+                type="submit" 
+                disabled={loading}
+                className="group relative w-full py-6 bg-gray-900 text-white rounded-[2.5rem] font-black text-sm uppercase tracking-[0.3em] overflow-hidden shadow-2xl hover:shadow-rose-100 transition-all active:scale-95 flex items-center justify-center gap-4"
+                >
+                <div className="absolute inset-0 bg-gradient-to-r from-rose-500 to-rose-600 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-500"></div>
+                {loading ? (
+                    <div className="w-6 h-6 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                    <span className="relative z-10 flex items-center gap-4">
+                        <Save size={20} /> Publish Creation
+                    </span>
+                )}
+                </button>
+                
+                <div className="flex items-center gap-3 px-6 py-4 bg-emerald-50 rounded-2xl border border-emerald-100 text-emerald-600">
+                    <CheckCircle size={18} />
+                    <p className="text-[10px] font-black uppercase tracking-widest">Auto-optimized for mobile</p>
+                </div>
             </div>
+          </div>
+        </form>
 
-            <div className="flex gap-4">
-              <button
-                type="button"
-                onClick={() => navigate("/admin/products")}
-                className="px-6 py-3 border rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-3 bg-gradient-to-r from-[#C9B59C] to-[#B8A48B] text-white rounded-lg flex items-center gap-2"
-              >
-                <FaSave /> Add Product
-              </button>
+        <section className="mt-20 p-12 bg-white/40 backdrop-blur-md rounded-[4rem] border border-white flex flex-col lg:flex-row items-center justify-between gap-10">
+            <div className="flex items-center gap-6">
+                <div className="w-20 h-20 bg-rose-500 rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-rose-500/30">
+                    <Sparkles size={40} />
+                </div>
+                <div>
+                    <h3 className="text-2xl font-black text-gray-900 tracking-tight">Need Inspiration?</h3>
+                    <p className="text-gray-500 font-bold">Use our premium templates to describe your handcrafted treats.</p>
+                </div>
             </div>
-          </form>
-        </div>
+            <button className="px-10 py-5 bg-white border border-gray-100 rounded-[2rem] font-black text-xs uppercase tracking-widest text-gray-400 hover:text-rose-500 transition-all shadow-sm">View Templates</button>
+        </section>
       </main>
     </div>
   );

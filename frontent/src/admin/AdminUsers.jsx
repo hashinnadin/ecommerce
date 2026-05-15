@@ -1,45 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
-  FaBan,
-  FaCheck,
-  FaSearch,
-  FaUser,
-  FaHome,
-  FaBox,
-  FaShoppingCart,
-  FaUsers,
-  FaSignOutAlt,
-  FaBars,
-  FaTimes,
-  FaTachometerAlt,
-  FaLock,
-  FaUnlock,
-} from "react-icons/fa";
+  Ban, Search, User, Lock, Unlock, Mail, ShieldCheck, Filter, MoreVertical, ShieldAlert
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import API from "../api";
+import AdminNavbar from "./AdminNavbar";
 
 function AdminUsers() {
-  const navigate = useNavigate();
-
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  /* 🔐 ADMIN AUTH CHECK */
-  useEffect(() => {
-    const admin = JSON.parse(localStorage.getItem("admin"));
-    if (!admin) {
-      toast.error("Admin login required");
-      navigate("/login");
-    }
-  }, [navigate]);
-
-  /* 🔹 LOAD USERS */
   const loadUsers = async () => {
     try {
+      setLoading(true);
       const res = await API.get("/admin/users");
       setUsers(res.data || []);
     } catch {
@@ -53,221 +28,138 @@ function AdminUsers() {
     loadUsers();
   }, []);
 
-  /* 🔄 BLOCK / UNBLOCK */
-  const toggleUserStatus = async (id, currentStatus) => {
-    const isCurrentlyBlocked = currentStatus === "blocked" || currentStatus === true;
-    const newStatus = isCurrentlyBlocked ? "unblocked" : "blocked";
-    
-    if (!window.confirm(`Are you sure you want to ${newStatus} this user?`))
-      return;
+  const toggleUserStatus = async (id, isBlocked) => {
+    const action = isBlocked ? "unblock" : "suspend";
+    if (!window.confirm(`Are you sure you want to ${action} this customer's access?`)) return;
 
     try {
-      await API.put(`/admin/users/${id}/block`, { IsBlocked: !isCurrentlyBlocked });
-      toast.success(`User ${newStatus} successfully`);
+      await API.put(`/admin/users/${id}/block`, { is_blocked: !isBlocked });
+      toast.success(`User access ${isBlocked ? "restored" : "suspended"}`);
       loadUsers();
     } catch {
-      toast.error(`Failed to ${newStatus} user`);
+      toast.error(`Failed to ${action} user`);
     }
   };
 
-  /* 🔍 FILTER */
   const filteredUsers = users.filter((u) => {
-    const name = u?.Name || u?.username || "";
-    const email = u?.Email || u?.email || "";
-    return [name, email].some((v) =>
-      v.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const name = u?.name || u?.username || "";
+    const email = u?.email || "";
+    return [name, email].some((v) => v.toLowerCase().includes(searchTerm.toLowerCase()));
   });
 
-  const logoutAdmin = () => {
-    localStorage.removeItem("admin");
-    navigate("/login");
-  };
-
-  const menuItems = [
-    { path: "/admin", label: "Dashboard", icon: <FaHome /> },
-    { path: "/admin/products", label: "Products", icon: <FaBox /> },
-    { path: "/admin/orders", label: "Orders", icon: <FaShoppingCart /> },
-    { path: "/admin/users", label: "Users", icon: <FaUsers /> },
-  ];
-
-  if (loading)
-    return (
-      <div className="min-h-screen flex justify-center items-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#C9B59C] border-t-transparent animate-spin rounded-full mx-auto"></div>
-          <p className="mt-3 text-[#5D4737]">Loading users...</p>
-        </div>
-      </div>
-    );
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="w-12 h-12 border-4 border-rose-100 border-t-rose-500 rounded-full"></motion.div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F9F8F6] to-[#EFE9E3]">
-      {/* SIDEBAR */}
-      <aside
-        className={`fixed top-0 left-0 h-full bg-white border-r shadow-xl z-40 transition-all
-        ${isSidebarOpen ? "w-64" : "w-20"}
-        ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
-      >
-        <div className="p-6 border-b flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex justify-center items-center rounded-full bg-gradient-to-r from-[#C9B59C] to-[#B8A48B] text-white">
-              <FaTachometerAlt />
+    <div className="min-h-screen bg-[#FDFCFB] flex">
+      <AdminNavbar />
+
+      {/* dY"1 MAIN CONTENT */}
+      <main className="flex-1 lg:ml-72 p-6 md:p-12 mt-16 lg:mt-0 relative">
+        <header className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-8 mb-16 relative z-10">
+          <div>
+            <nav className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4">
+                <User size={12} /> Community Governance
+            </nav>
+            <h1 className="text-5xl lg:text-7xl font-black text-gray-900 tracking-tighter leading-none mb-4">User <span className="text-gradient">Manager</span></h1>
+            <p className="text-gray-500 font-bold text-lg">Manage access and monitor engagement for your bakery circle.</p>
+          </div>
+
+          <div className="flex flex-col md:flex-row w-full xl:w-auto gap-4">
+            <div className="relative flex-1 md:w-96">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
+                <input 
+                    placeholder="Search by name or email..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-14 pr-6 py-4 bg-white/70 backdrop-blur-xl border border-white rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-rose-50 transition-all shadow-premium text-sm font-bold" 
+                />
             </div>
-            {isSidebarOpen && (
-              <div>
-                <h1 className="text-xl font-bold text-[#5D4737]">
-                  Admin Panel
-                </h1>
-                <p className="text-xs text-[#8B7355]">Users</p>
-              </div>
-            )}
+            <button className="p-5 bg-white border border-gray-100 rounded-[1.5rem] text-gray-400 shadow-premium hover:text-rose-500 transition-all"><Filter size={22} /></button>
           </div>
+        </header>
 
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="hidden lg:block"
-          >
-            {isSidebarOpen ? <FaTimes /> : <FaBars />}
-          </button>
-        </div>
-
-        <nav className="p-4 space-y-2 overflow-y-auto h-[75vh]">
-          {menuItems.map((item) => (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-3 p-3 rounded-lg
-              ${
-                window.location.pathname === item.path
-                  ? "bg-gradient-to-r from-[#C9B59C] to-[#B8A48B] text-white"
-                  : "hover:bg-[#F9F8F6]"
-              }`}
-            >
-              <span className="text-xl">{item.icon}</span>
-              {isSidebarOpen && item.label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
-          <button
-            onClick={logoutAdmin}
-            className="w-full flex items-center justify-center gap-2 bg-red-500 text-white rounded-lg py-3"
-          >
-            <FaSignOutAlt />
-            {isSidebarOpen && "Logout"}
-          </button>
-        </div>
-      </aside>
-
-      {/* MOBILE TOGGLE */}
-      <button
-        className="lg:hidden fixed top-4 left-4 bg-white p-2 shadow rounded-lg z-50"
-        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      >
-        {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
-      </button>
-
-      {/* MAIN */}
-      <main
-        className={`transition-all min-h-screen p-6 ${
-          isSidebarOpen ? "lg:ml-64" : "lg:ml-20"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-[#5D4737]">
-            User Management
-          </h1>
-          <p className="text-[#8B7355] mb-6">
-            Manage registered users
-          </p>
-
-          {/* SEARCH */}
-          <div className="relative max-w-md mb-6">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8B7355]" />
-            <input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by username or email..."
-              className="w-full pl-12 pr-4 py-3 border rounded-lg bg-white"
-            />
-          </div>
-
-          {/* USERS TABLE */}
-          <div className="bg-white rounded-xl shadow border overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-[#F9F8F6] text-left">
-                <tr>
-                  <th className="p-4">User</th>
-                  <th className="p-4">Username</th>
-                  <th className="p-4">Email</th>
-                  <th className="p-4">Password</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Actions</th>
+        <div className="bg-white/70 backdrop-blur-xl rounded-[4rem] shadow-premium border border-white overflow-hidden relative z-10">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1000px] text-left">
+              <thead>
+                <tr className="border-b border-gray-50">
+                  <th className="px-10 py-8 text-[10px] font-black text-gray-400 uppercase tracking-widest">Customer Identity</th>
+                  <th className="px-10 py-8 text-[10px] font-black text-gray-400 uppercase tracking-widest">Account Status</th>
+                  <th className="px-10 py-8 text-[10px] font-black text-gray-400 uppercase tracking-widest">Engagement</th>
+                  <th className="px-10 py-8 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Access Controls</th>
                 </tr>
               </thead>
-
-              <tbody>
-                {filteredUsers.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="text-center p-6 text-[#8B7355]">
-                      No users found
-                    </td>
-                  </tr>
-                ) : (
-                  filteredUsers.map((u) => (
-                    <tr key={u.id} className="hover:bg-[#F9F8F6]">
-                      <td className="p-4">
-                        <div className="w-12 h-12 bg-gradient-to-r from-[#C9B59C] to-[#B8A48B] flex justify-center items-center rounded-full text-white">
-                          <FaUser />
-                        </div>
-                      </td>
-                      <td className="p-4">{u.Name || u.username}</td>
-                      <td className="p-4">{u.Email || u.email}</td>
-                      <td className="p-4">
-                        <span className="bg-[#F9F8F6] px-2 rounded text-sm">
-                          {u.Password ? "****" : u.password}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        {u.IsBlocked === true || u.status === "blocked" ? (
-                          <span className="text-red-600 flex items-center gap-1">
-                            <FaBan /> Blocked
-                          </span>
-                        ) : (
-                          <span className="text-green-600 flex items-center gap-1">
-                            <FaCheck /> Active
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="p-4">
-                        <button
-                          onClick={() =>
-                            toggleUserStatus(u.ID || u.id, u.IsBlocked !== undefined ? u.IsBlocked : u.status)
-                          }
-                          className={`px-4 py-2 rounded-lg text-white flex items-center gap-2
-                          ${
-                            u.IsBlocked === true || u.status === "blocked"
-                              ? "bg-green-500"
-                              : "bg-red-500"
-                          }`}
-                        >
-                          {u.IsBlocked === true || u.status === "blocked" ? (
-                            <>
-                              <FaUnlock /> Unblock
-                            </>
-                          ) : (
-                            <>
-                              <FaLock /> Block
-                            </>
-                          )}
-                        </button>
+              <tbody className="divide-y divide-gray-50">
+                <AnimatePresence mode="popLayout">
+                  {filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" className="px-10 py-40 text-center">
+                          <User className="text-gray-200 mx-auto mb-6" size={64} />
+                          <h3 className="text-2xl font-black text-gray-900 mb-2">No Customers Found</h3>
+                          <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Your search didn't return any results</p>
                       </td>
                     </tr>
-                  ))
-                )}
+                  ) : (
+                    filteredUsers.map((u, i) => {
+                      const isBlocked = u.is_blocked === true || u.status === "blocked";
+                      return (
+                        <motion.tr
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          key={u.ID || u.id}
+                          className="hover:bg-gray-50/50 transition-colors group"
+                        >
+                          <td className="px-10 py-8">
+                            <div className="flex items-center gap-6">
+                              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-gray-300 border border-gray-50 group-hover:bg-rose-50 group-hover:text-rose-500 group-hover:border-rose-100 transition-all duration-500 shadow-sm">
+                                <User size={24} />
+                              </div>
+                              <div>
+                                <p className="font-black text-gray-900 text-lg tracking-tight leading-none mb-1">{u.name || u.username || "Artisan Guest"}</p>
+                                <p className="text-gray-400 font-bold text-xs flex items-center gap-2"><Mail size={12} /> {u.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-10 py-8">
+                            {isBlocked ? (
+                              <div className="px-5 py-2 bg-rose-50 text-rose-600 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 w-fit border border-rose-100 shadow-sm animate-pulse">
+                                <Ban size={14} /> Suspended
+                              </div>
+                            ) : (
+                              <div className="px-5 py-2 bg-emerald-50 text-emerald-600 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 w-fit border border-emerald-100 shadow-sm">
+                                <ShieldCheck size={14} /> Active Account
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-10 py-8">
+                              <div className="flex flex-col gap-1">
+                                  <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Member Since</span>
+                                  <span className="font-black text-gray-900">{new Date(u.created_at || Date.now()).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</span>
+                              </div>
+                          </td>
+                          <td className="px-10 py-8 text-right">
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={() => toggleUserStatus(u.ID || u.id, isBlocked)}
+                                    className={`px-8 py-4 rounded-[1.2rem] font-black text-[10px] uppercase tracking-widest transition-all shadow-sm flex items-center gap-3 ${isBlocked ? "bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-emerald-100" : "bg-white text-rose-500 border border-rose-50 hover:bg-rose-500 hover:text-white hover:shadow-rose-100"}`}
+                                >
+                                    {isBlocked ? <><Unlock size={16} /> Restore Access</> : <><Lock size={16} /> Suspend Access</>}
+                                </button>
+                                <button className="p-4 bg-gray-50 rounded-[1.2rem] text-gray-300 hover:text-gray-900 transition-all">
+                                    <MoreVertical size={20} />
+                                </button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      );
+                    })
+                  )}
+                </AnimatePresence>
               </tbody>
             </table>
           </div>

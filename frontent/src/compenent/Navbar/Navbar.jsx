@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import logo from "../../assets/logo.png";
-import { useNavigate, useLocation } from "react-router-dom";
-import { FaShoppingCart, FaHeart, FaSignOutAlt, FaUser, FaHome, FaBox } from "react-icons/fa";
-import { HiSearch, HiMenu, HiX } from "react-icons/hi";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import { FaShoppingCart, FaHeart, FaSignOutAlt, FaUser, FaHome, FaBox, FaShoppingBag, FaBars, FaTimes } from "react-icons/fa";
 import { toast } from "react-toastify";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
@@ -12,310 +12,198 @@ function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { user, logout } = useAuth();
+  const { user, admin, logout } = useAuth();
   const { cartCount } = useCart();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const isActive = (path) => location.pathname === path;
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchTerm.trim()) {
-      navigate(`/products?search=${searchTerm}`);
-      setSearchTerm("");
-    }
-  };
-
-  const handleCartClick = () => {
-    if (!user) {
-      toast.error("Please login first");
-      navigate("/login");
-    } else {
-      navigate("/cart");
-    }
-  };
-
-  const handleWishlistClick = () => {
-    if (!user) {
-      toast.error("Please login first");
-      navigate("/login");
-    } else {
-      navigate("/wishlist");
-    }
-  };
-
-
-
   const navLinks = [
     { path: "/", label: "Home", icon: <FaHome /> },
-    { path: "/products", label: "All Cakes", icon: <FaBox /> },
-    { path: "/orders", label: "My Orders", icon: <FaBox /> },
+    { path: "/products", label: "Menu", icon: <FaBox /> },
+    { path: "/orders", label: "Orders", icon: <FaShoppingBag /> },
   ];
 
   return (
-    <nav className="w-full bg-white shadow-lg border-b border-gray-100 sticky top-0 z-50">
-      <div className="container mx-auto px-4">
-        {/* Main Navbar */}
-        <div className="flex items-center justify-between py-3">
-          
-          {/* LOGO */}
-          <div 
-            className="flex items-center gap-3 cursor-pointer hover:opacity-90 transition-opacity" 
-            onClick={() => navigate("/")}
-          >
-            <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-pink-500 rounded-xl flex items-center justify-center shadow-md">
-              <img src={logo} alt="CakeHub Logo" className="w-8 h-8 rounded-lg" />
-            </div>
-            <span className="text-2xl font-bold hidden sm:block text-gray-800">
-              Cake<span className="text-rose-500">Hub</span>
-            </span>
+    <nav 
+      className={`w-full fixed top-0 left-0 z-[100] transition-all duration-300 ${
+        isScrolled ? "bg-white/80 backdrop-blur-md shadow-premium py-2" : "bg-transparent py-4"
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+        
+        {/* 🔹 LOGO */}
+        <Link 
+          to="/" 
+          className="flex items-center gap-3 group"
+        >
+          <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:rotate-6 transition-transform">
+            <img src={logo} alt="L" className="w-8 h-8 rounded-lg" />
           </div>
+          <span className="text-2xl font-black tracking-tight text-gray-900">
+            Bake<span className="text-rose-500">Hub</span>
+          </span>
+        </Link>
 
-          <ul className="hidden lg:flex items-center gap-1">
+        {/* 🔹 DESKTOP NAV */}
+        <div className="hidden lg:flex items-center gap-8">
+          <ul className="flex items-center gap-1">
             {navLinks.map((link) => (
               <li key={link.path}>
-                <button 
-                  onClick={() => {
-                    if (link.path === "/orders" && !user) {
-                      toast.error("Please login first");
-                      navigate("/login");
-                    } else {
-                      navigate(link.path);
-                    }
-                  }}
-                  className={`px-4 py-2.5 rounded-lg flex items-center gap-2 transition-all ${
+                <Link
+                  to={link.path}
+                  className={`px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all ${
                     isActive(link.path)
-                      ? "bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-md"
-                      : "text-gray-700 hover:bg-rose-50 hover:text-rose-600"
+                      ? "text-rose-500 bg-rose-50"
+                      : "text-gray-600 hover:text-rose-500 hover:bg-rose-50/50"
                   }`}
                 >
-                  <span className={`${isActive(link.path) ? "text-white" : "text-rose-400"}`}>
-                    {link.icon}
-                  </span>
-                  <span className="font-medium">{link.label}</span>
-                </button>
+                  {link.label}
+                </Link>
               </li>
             ))}
+            {admin && (
+              <li>
+                <Link
+                  to="/admin"
+                  className="px-5 py-2.5 rounded-xl font-black text-rose-500 bg-rose-50/50 flex items-center gap-2 transition-all hover:bg-rose-500 hover:text-white"
+                >
+                  Dashboard
+                </Link>
+              </li>
+            )}
           </ul>
 
-          {/* DESKTOP SEARCH */}
-          <div className="hidden lg:flex flex-1 max-w-md mx-6">
-            <form onSubmit={handleSearch} className="relative w-full">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search cakes by name or flavor..."
-                  className="w-full px-5 py-2.5 pl-12 rounded-full border border-gray-300 focus:border-rose-400 focus:ring-2 focus:ring-rose-100 focus:outline-none bg-gray-50 text-gray-700 placeholder-gray-400"
-                />
-                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                  <HiSearch size={18} />
-                </div>
-                {searchTerm && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchTerm("")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <HiX size={16} />
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
+          <div className="h-6 w-px bg-gray-200"></div>
 
-          {/* ACTION BUTTONS */}
           <div className="flex items-center gap-3">
-            {/* WISHLIST */}
             <button 
-              onClick={handleWishlistClick}
-              className="p-2.5 rounded-lg text-gray-600 hover:text-rose-500 hover:bg-rose-50 transition-colors relative group"
-              title="Wishlist"
+              onClick={() => navigate("/wishlist")}
+              className="p-3 text-gray-600 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all relative"
             >
               <FaHeart size={20} />
-              <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Wishlist
-              </div>
             </button>
 
-            {/* CART */}
-            <div className="relative group">
-              <button 
-                onClick={handleCartClick}
-                className="p-2.5 rounded-lg text-gray-600 hover:text-rose-500 hover:bg-rose-50 transition-colors relative"
-                title="Cart"
-              >
-                <FaShoppingCart size={20} />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md">
-                    {cartCount}
-                  </span>
-                )}
-              </button>
-              <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Cart ({cartCount})
-              </div>
-            </div>
+            <button 
+              onClick={() => navigate("/cart")}
+              className="p-3 text-gray-600 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all relative"
+            >
+              <FaShoppingCart size={20} />
+              {cartCount > 0 && (
+                <span className="absolute top-2 right-2 w-5 h-5 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                  {cartCount}
+                </span>
+              )}
+            </button>
 
-            {/* USER AUTH */}
-            {user ? (
-              <button 
-                onClick={logout}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-lg hover:shadow-md transition-shadow font-medium"
-              >
-                <FaSignOutAlt />
-                <span className="hidden sm:inline">Logout</span>
-              </button>
+            {user || admin ? (
+              <div className="flex items-center gap-4 ml-2">
+                <button 
+                  onClick={() => navigate(admin ? "/admin" : "/orders")}
+                  className="w-10 h-10 bg-rose-100 text-rose-500 rounded-2xl flex items-center justify-center font-black hover:bg-rose-200 transition-colors"
+                >
+                  {(user?.name || admin?.name || "A").charAt(0).toUpperCase()}
+                </button>
+                <button 
+                  onClick={logout}
+                  className="p-3 text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <FaSignOutAlt size={18} />
+                </button>
+              </div>
             ) : (
               <button 
                 onClick={() => navigate("/login")}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg hover:shadow-md transition-shadow font-medium"
+                className="ml-2 px-6 py-2.5 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-lg hover:shadow-gray-200 flex items-center gap-2"
               >
-                <FaUser />
-                <span className="hidden sm:inline">Login</span>
+                <FaUser size={14} /> Login
               </button>
             )}
-
-            {/* MOBILE MENU TOGGLE */}
-            <button 
-              className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              aria-label="Toggle menu"
-            >
-              {isMenuOpen ? <HiX size={24} /> : <HiMenu size={24} />}
-            </button>
           </div>
         </div>
 
-        {/* MOBILE MENU */}
-        {isMenuOpen && (
-          <div className="lg:hidden border-t border-gray-100 py-4 animate-slideDown">
-            {/* MOBILE SEARCH */}
-            <form onSubmit={handleSearch} className="mb-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search cakes..."
-                  className="w-full px-4 py-3 pl-12 rounded-lg border border-gray-300 focus:border-rose-400 focus:outline-none bg-gray-50"
-                />
-                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                  <HiSearch size={18} />
-                </div>
-                {searchTerm && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchTerm("")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <HiX size={16} />
-                  </button>
-                )}
-              </div>
-            </form>
+        {/* 🔹 MOBILE TOGGLE */}
+        <button 
+          className="lg:hidden p-3 bg-white shadow-premium rounded-2xl text-gray-900"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        >
+          {isMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
+        </button>
+      </div>
 
-            {/* MOBILE NAV LINKS */}
+      {/* 🔹 MOBILE MENU */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-full left-0 w-full bg-white/95 backdrop-blur-xl border-t border-gray-100 shadow-2xl lg:hidden p-6"
+          >
             <ul className="space-y-2">
               {navLinks.map((link) => (
                 <li key={link.path}>
-                  <button 
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      if (link.path === "/orders" && !user) {
-                        toast.error("Please login first");
-                        navigate("/login");
-                      } else {
-                        navigate(link.path);
-                      }
-                    }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg ${
-                      isActive(link.path)
-                        ? "bg-rose-50 text-rose-600 border-l-4 border-rose-500"
-                        : "text-gray-700 hover:bg-gray-50"
+                  <Link
+                    to={link.path}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`flex items-center gap-4 p-4 rounded-2xl font-bold ${
+                      isActive(link.path) ? "bg-rose-50 text-rose-500" : "text-gray-700"
                     }`}
                   >
-                    <span className={`${isActive(link.path) ? "text-rose-500" : "text-gray-500"}`}>
-                      {link.icon}
-                    </span>
-                    <span className="font-medium">{link.label}</span>
-                  </button>
+                    {link.icon} {link.label}
+                  </Link>
                 </li>
               ))}
-              
-              {/* MOBILE WISHLIST */}
               <li>
-                <button 
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    handleWishlistClick();
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
+                <Link
+                  to="/wishlist"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-4 p-4 rounded-2xl font-bold text-gray-700"
                 >
-                  <FaHeart className="text-rose-400" />
-                  <span className="font-medium">Wishlist</span>
-                </button>
+                  <FaHeart /> Wishlist
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/cart"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-4 p-4 rounded-2xl font-bold text-gray-700"
+                >
+                  <FaShoppingCart /> Cart ({cartCount})
+                </Link>
               </li>
             </ul>
 
-            {/* MOBILE USER INFO */}
-            <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="mt-6 pt-6 border-t border-gray-100">
               {user ? (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-rose-500 to-pink-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                      {user.name?.charAt(0).toUpperCase() || "U"}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-800">{user.name || "User"}</p>
-                      <p className="text-xs text-gray-500">{user.email || ""}</p>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={logout}
-                    className="px-3 py-1.5 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-900"
-                  >
-                    Logout
-                  </button>
-                </div>
+                <button 
+                  onClick={logout}
+                  className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold"
+                >
+                  Logout
+                </button>
               ) : (
-                <div className="text-center">
-                  <p className="text-gray-600 mb-3">Login to access all features</p>
-                  <button 
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      navigate("/login");
-                    }}
-                    className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg font-medium"
-                  >
-                    Login / Register
-                  </button>
-                </div>
+                <button 
+                  onClick={() => navigate("/login")}
+                  className="w-full py-4 bg-rose-500 text-white rounded-2xl font-bold shadow-lg shadow-rose-200"
+                >
+                  Sign In
+                </button>
               )}
             </div>
-          </div>
+          </motion.div>
         )}
-      </div>
-
-      {/* Custom Animation */}
-      <style jsx>{`
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-slideDown {
-          animation: slideDown 0.3s ease-out;
-        }
-      `}</style>
+      </AnimatePresence>
     </nav>
   );
 }

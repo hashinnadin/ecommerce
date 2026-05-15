@@ -1,17 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
-import {
-  FaTrash,
-  FaPlus,
-  FaMinus,
-  FaShoppingBag,
-  FaArrowLeft,
-  FaSpinner,
-} from "react-icons/fa";
+import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, CreditCard, Truck, ShieldCheck, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import Footer from "../compenent/Footer";
 
 function Cart() {
   const navigate = useNavigate();
@@ -19,33 +14,22 @@ function Cart() {
   const { user } = useAuth();
   const [localLoading, setLocalLoading] = useState({});
 
-  // ✅ REDIRECT IF NOT LOGGED IN
   useEffect(() => {
-    if (!user) {
-      navigate("/login");
-    }
+    if (!user) navigate("/login");
   }, [user, navigate]);
 
   if (!user) return null;
 
-  // Calculate totals safely
-  const subtotal = cartItems.reduce((sum, item) => {
-    const price = Number(item.price) || 0;
-    const quantity = Number(item.quantity) || 1;
-    return sum + (price * quantity);
-  }, 0);
-
+  const subtotal = cartItems.reduce((sum, item) => sum + (Number(item.price) * (Number(item.quantity) || 1)), 0);
   const deliveryFee = subtotal >= 999 ? 0 : 99;
   const total = subtotal + deliveryFee;
 
   const handleUpdateQuantity = async (id, newQuantity) => {
     if (newQuantity < 1) return;
-    
     setLocalLoading(prev => ({ ...prev, [id]: true }));
     try {
       await updateQuantity(id, newQuantity);
     } catch (error) {
-      console.error("Failed to update quantity:", error);
       toast.error("Failed to update quantity");
     } finally {
       setLocalLoading(prev => ({ ...prev, [id]: false }));
@@ -57,183 +41,138 @@ function Cart() {
       setLocalLoading(prev => ({ ...prev, [id]: true }));
       try {
         await removeFromCart(id);
-        toast.success(`${name} removed from cart`);
-      } catch (error) {
-        console.error("Failed to remove item:", error);
-        toast.error("Failed to remove item");
+        toast.success("Removed from cart");
       } finally {
         setLocalLoading(prev => ({ ...prev, [id]: false }));
       }
     }
   };
 
-  const handleImageError = (e) => {
-    e.target.src = "https://via.placeholder.com/100x100?text=Cake";
-  };
+  if (loading && cartItems.length === 0) return (
+    <div className="min-h-screen flex items-center justify-center bg-rose-50/20">
+      <div className="w-16 h-16 border-4 border-rose-100 border-t-rose-500 rounded-full animate-spin"></div>
+    </div>
+  );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <FaSpinner className="text-4xl text-rose-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading your cart...</p>
+  if (cartItems.length === 0) return (
+    <div className="min-h-screen bg-[#FDFCFB] flex flex-col items-center justify-center px-6">
+      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center max-w-md">
+        <div className="w-32 h-32 bg-rose-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 shadow-premium">
+          <ShoppingBag size={48} className="text-rose-500" />
         </div>
-      </div>
-    );
-  }
-
-  if (cartItems.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <div className="w-24 h-24 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <FaShoppingBag size={40} className="text-rose-400" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Your cart is empty</h2>
-          <p className="text-gray-600 mb-8">Looks like you haven't added any cakes yet</p>
-          <button
-            onClick={() => navigate("/products")}
-            className="px-8 py-3 bg-rose-500 text-white rounded-lg font-semibold hover:bg-rose-600 transition-colors"
-          >
-            Browse Products
-          </button>
-        </div>
-      </div>
-    );
-  }
+        <h2 className="text-4xl font-black text-gray-900 mb-4">Your Cart is Empty</h2>
+        <p className="text-gray-500 font-medium mb-10 leading-relaxed">Delicious cakes are waiting for you! Start adding some sweetness to your cart today.</p>
+        <button onClick={() => navigate("/products")} className="px-10 py-4 bg-gray-900 text-white rounded-2xl font-black shadow-xl hover:bg-black transition-all">
+          Explore Menu
+        </button>
+      </motion.div>
+      <Footer />
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <button
-          onClick={() => navigate("/products")}
-          className="flex items-center gap-2 text-gray-600 hover:text-rose-500 mb-6 transition-colors"
-        >
-          <FaArrowLeft /> Continue Shopping
-        </button>
+    <div className="min-h-screen bg-[#FDFCFB]">
+      <div className="pt-32 pb-20 max-w-7xl mx-auto px-6">
+        <div className="flex items-center gap-2 text-sm font-bold text-gray-400 mb-4">
+          <span className="hover:text-rose-500 cursor-pointer" onClick={() => navigate("/")}>Home</span>
+          <ChevronRight size={14} />
+          <span className="text-rose-500">Cart</span>
+        </div>
+        <h1 className="text-4xl lg:text-5xl font-black text-gray-900 mb-12">Your Shopping <span className="text-gradient">Cart</span></h1>
 
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">Shopping Cart ({cartItems.length})</h1>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Cart Items */}
-          <div className="lg:col-span-2 space-y-4">
-            {cartItems.map((item) => (
-              <div key={item.id} className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow">
-                <div className="flex gap-4">
-                  {/* Product Image */}
-                  <div className="w-24 h-24 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                      onError={handleImageError}
-                    />
+        <div className="grid lg:grid-cols-3 gap-12 items-start">
+          {/* 🔹 ITEMS LIST */}
+          <div className="lg:col-span-2 space-y-6">
+            <AnimatePresence>
+              {cartItems.map((item, i) => (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -100 }}
+                  transition={{ delay: i * 0.1 }}
+                  key={item.id}
+                  className="bg-white rounded-[2.5rem] p-6 shadow-premium border border-gray-50 flex flex-col sm:flex-row gap-6 relative group"
+                >
+                  <div className="w-full sm:w-40 h-40 rounded-[1.5rem] overflow-hidden bg-rose-50 flex-shrink-0">
+                    <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   </div>
-                  
-                  {/* Product Details */}
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-lg text-gray-800">{item.name}</h3>
-                        <p className="text-rose-600 font-bold mt-1">₹{Number(item.price).toLocaleString()}</p>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveItem(item.id, item.name)}
-                        disabled={localLoading[item.id]}
-                        className="text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50 p-2"
-                        title="Remove item"
-                      >
-                        {localLoading[item.id] ? (
-                          <FaSpinner className="animate-spin" size={16} />
-                        ) : (
-                          <FaTrash size={16} />
-                        )}
-                      </button>
-                    </div>
 
-                    {/* Quantity Controls */}
-                    <div className="flex items-center gap-4 mt-4">
-                      <div className="flex items-center border rounded-lg">
-                        <button
-                          onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                          disabled={localLoading[item.id] || item.quantity <= 1}
-                          className="px-3 py-2 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <FaMinus size={12} />
-                        </button>
-                        <span className="w-12 text-center py-2 border-x font-medium">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                          disabled={localLoading[item.id]}
-                          className="px-3 py-2 hover:bg-gray-100 transition-colors disabled:opacity-50"
-                        >
-                          <FaPlus size={12} />
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-xl font-black text-gray-900">{item.name}</h3>
+                        <button onClick={() => handleRemoveItem(item.id, item.name)} className="p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all">
+                          <Trash2 size={20} />
                         </button>
                       </div>
-                      <p className="font-semibold text-gray-700">
-                        Total: ₹{(Number(item.price) * item.quantity).toLocaleString()}
-                      </p>
+                      <p className="text-rose-500 font-black text-lg">₹{item.price}</p>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-6">
+                      <div className="flex items-center bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
+                        <button onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-rose-500 rounded-xl transition-all"><Minus size={16} /></button>
+                        <span className="w-12 text-center font-black text-gray-900">{item.quantity}</span>
+                        <button onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-rose-500 rounded-xl transition-all"><Plus size={16} /></button>
+                      </div>
+                      <p className="font-black text-gray-900">Total: ₹{Number(item.price) * item.quantity}</p>
                     </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
 
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-24">
-              <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+          {/* 🔹 SUMMARY */}
+          <div className="lg:col-span-1 sticky top-32">
+            <div className="bg-gray-900 text-white rounded-[3rem] p-10 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-[40px] rounded-full"></div>
+              <h2 className="text-2xl font-black mb-8">Order Summary</h2>
               
-              <div className="space-y-3 mb-4">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="font-medium">₹{subtotal.toLocaleString()}</span>
+              <div className="space-y-4 mb-10">
+                <div className="flex justify-between text-gray-400 font-bold">
+                  <span>Subtotal</span>
+                  <span className="text-white">₹{subtotal}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Delivery Fee</span>
-                  <span className="font-medium">
-                    {deliveryFee === 0 ? (
-                      <span className="text-green-600">Free</span>
-                    ) : (
-                      `₹${deliveryFee}`
-                    )}
-                  </span>
+                <div className="flex justify-between text-gray-400 font-bold">
+                  <span>Delivery</span>
+                  <span className={deliveryFee === 0 ? "text-emerald-400" : "text-white"}>{deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}</span>
                 </div>
                 {subtotal < 999 && (
-                  <p className="text-sm text-green-600 bg-green-50 p-2 rounded">
-                    Add ₹{(999 - subtotal).toLocaleString()} more for free delivery
+                  <p className="text-[10px] text-emerald-400 font-black tracking-widest uppercase text-center bg-emerald-500/10 py-2 rounded-xl border border-emerald-500/20">
+                    Add ₹{999 - subtotal} for FREE Delivery
                   </p>
                 )}
-                <div className="border-t pt-3 mt-3">
-                  <div className="flex justify-between font-bold text-lg">
+                <div className="pt-6 border-t border-gray-800">
+                  <div className="flex justify-between text-2xl font-black">
                     <span>Total</span>
-                    <span className="text-rose-600">₹{total.toLocaleString()}</span>
+                    <span className="text-rose-500">₹{total}</span>
                   </div>
                 </div>
               </div>
 
               <button
                 onClick={() => navigate("/payment")}
-                disabled={loading || cartItems.length === 0}
-                className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-semibold hover:from-green-600 hover:to-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-5 bg-rose-500 text-white rounded-[1.5rem] font-black text-lg shadow-xl shadow-rose-500/20 hover:bg-rose-600 hover:-translate-y-1 transition-all flex items-center justify-center gap-3"
               >
-                Proceed to Checkout
+                Checkout <CreditCard size={20} />
               </button>
 
-              {/* Continue Shopping Link */}
-              <button
-                onClick={() => navigate("/products")}
-                className="w-full text-center mt-4 text-sm text-gray-500 hover:text-rose-500 transition-colors"
-              >
-                or continue shopping
-              </button>
+              <div className="mt-8 grid grid-cols-2 gap-4">
+                <div className="flex flex-col items-center gap-1 opacity-60">
+                  <Truck size={16} />
+                  <span className="text-[8px] font-black uppercase">Fast Delivery</span>
+                </div>
+                <div className="flex flex-col items-center gap-1 opacity-60">
+                  <ShieldCheck size={16} />
+                  <span className="text-[8px] font-black uppercase">Secure Pay</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

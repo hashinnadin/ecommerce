@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { FaCreditCard, FaMobileAlt, FaArrowLeft } from "react-icons/fa";
+import { CreditCard, Smartphone, ArrowLeft, CheckCircle2, Truck, ShieldCheck, MapPin, Package, ChevronRight, Info } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import API from "../api";
+import Footer from "../compenent/Footer";
 
 function Payment() {
   const navigate = useNavigate();
@@ -14,575 +16,213 @@ function Payment() {
 
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [loading, setLoading] = useState(false);
-
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [step, setStep] = useState(1); // 1: Address, 2: Payment
 
   const [address, setAddress] = useState({
-    fullName: "",
-    mobile: "",
-    house: "",
-    street: "",
-    city: "",
-    pincode: "",
-    state: "",
+    fullName: "", mobile: "", house: "", street: "", city: "", pincode: "", state: "",
   });
 
   const [errors, setErrors] = useState({});
   const [addressErrors, setAddressErrors] = useState({});
+  const [formData, setFormData] = useState({ cardNumber: "", expiryDate: "", cvv: "", nameOnCard: "", upiId: "" });
 
-  const [formData, setFormData] = useState({
-    cardNumber: "",
-    expiryDate: "",
-    cvv: "",
-    nameOnCard: "",
-    upiId: "",
-  });
-
-  // Check authentication and cart
   useEffect(() => {
-    if (!user) {
-      toast.error("Please login to continue");
-      navigate("/login");
-      return;
-    }
+    if (!user) { navigate("/login"); return; }
+    if (cartItems.length === 0 && !orderSuccess) { navigate("/"); return; }
 
-    if (cartItems.length === 0) {
-      toast.info("Your cart is empty");
-      navigate("/");
-      return;
-    }
-
-    // Load saved address
-    const loadAddress = async () => {
+    (async () => {
       try {
-        const res = await API.get(`/users/${user.id}`);
-        if (res.data.address) {
-          setAddress(res.data.address);
-        }
-      } catch (error) {
-        console.error("Failed to load address:", error);
-      }
-    };
+        const res = await API.get("/user/profile");
+        if (res.data.address) setAddress(res.data.address);
+      } catch (error) { console.error(error); }
+    })();
+  }, [user, cartItems, navigate, orderSuccess]);
 
-    loadAddress();
-  }, [user, cartItems, navigate]);
-
-  const getTotalPrice = () =>
-    cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const deliveryFee = subtotal >= 999 ? 0 : 99;
+  const total = subtotal + deliveryFee;
 
   const handleAddressInput = (e) => {
     const { name, value } = e.target;
-    let v = value;
-
-    if (name === "mobile") v = value.replace(/\D/g, "").slice(0, 10);
-    if (name === "pincode") v = value.replace(/\D/g, "").slice(0, 6);
-
-    setAddress({ ...address, [name]: v });
-    
-    // Clear error for this field
-    if (addressErrors[name]) {
-      setAddressErrors({ ...addressErrors, [name]: null });
-    }
+    setAddress({ ...address, [name]: value });
+    if (addressErrors[name]) setAddressErrors({ ...addressErrors, [name]: null });
   };
 
-  const handleChange = (e) => {
+  const handlePaymentInput = (e) => {
     const { name, value } = e.target;
-    let v = value;
-
-    if (name === "cardNumber")
-      v = v.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim().slice(0, 19);
-    if (name === "expiryDate") {
-      v = v.replace(/\D/g, "");
-      if (v.length >= 2) {
-        v = v.slice(0, 2) + "/" + v.slice(2, 4);
-      }
-    }
-    if (name === "cvv") v = v.replace(/\D/g, "").slice(0, 3);
-
-    setFormData({ ...formData, [name]: v });
-    
-    // Clear error for this field
-    if (errors[name]) {
-      setErrors({ ...errors, [name]: null });
-    }
+    setFormData({ ...formData, [name]: value });
+    if (errors[name]) setErrors({ ...errors, [name]: null });
   };
 
   const validateAddress = () => {
-    let addrErr = {};
-
-    if (!address.fullName.trim()) addrErr.fullName = "Full name is required";
-    if (!address.mobile || address.mobile.length !== 10) 
-      addrErr.mobile = "Valid 10-digit mobile number is required";
-    if (!address.house.trim()) addrErr.house = "House/Flat number is required";
-    if (!address.street.trim()) addrErr.street = "Street address is required";
-    if (!address.city.trim()) addrErr.city = "City is required";
-    if (!address.pincode || address.pincode.length !== 6) 
-      addrErr.pincode = "Valid 6-digit pincode is required";
-    if (!address.state.trim()) addrErr.state = "State is required";
-
-    setAddressErrors(addrErr);
-    return Object.keys(addrErr).length === 0;
-  };
-
-  const validatePayment = () => {
     let err = {};
-
-    if (paymentMethod === "card") {
-      const cardNum = formData.cardNumber.replace(/\s/g, "");
-      if (cardNum.length !== 16) {
-        err.cardNumber = "Card number must be 16 digits";
-      }
-      if (!/^\d{2}\/\d{2}$/.test(formData.expiryDate)) {
-        err.expiryDate = "Use MM/YY format";
-      } else {
-        // Check if card is expired
-        const [month, year] = formData.expiryDate.split("/");
-        const expiry = new Date(2000 + parseInt(year), parseInt(month) - 1);
-        const today = new Date();
-        if (expiry < today) {
-          err.expiryDate = "Card has expired";
-        }
-      }
-      if (formData.cvv.length !== 3) {
-        err.cvv = "CVV must be 3 digits";
-      }
-      if (!formData.nameOnCard.trim()) {
-        err.nameOnCard = "Name on card is required";
-      }
-    }
-
-    if (paymentMethod === "upi") {
-      if (!formData.upiId.includes("@")) {
-        err.upiId = "Enter a valid UPI ID (e.g., name@bank)";
-      }
-    }
-
-    setErrors(err);
+    if (!address.fullName.trim()) err.fullName = "Required";
+    if (!address.mobile || address.mobile.length < 10) err.mobile = "Invalid mobile";
+    if (!address.house.trim()) err.house = "Required";
+    if (!address.city.trim()) err.city = "Required";
+    if (!address.state.trim()) err.state = "Required";
+    if (!address.pincode || address.pincode.length < 6) err.pincode = "Invalid pincode";
+    setAddressErrors(err);
     return Object.keys(err).length === 0;
   };
 
-  // Create order
-  const createOrder = async () => {
-    const order = {
-      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-      userId: user.id,
-      items: cartItems.map((item) => ({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        image: item.image,
-      })),
-      totalAmount: getTotalPrice(),
-      paymentMethod,
-      paymentStatus: "completed",
-      address: { ...address },
-      date: new Date().toISOString(),
-      status: "Processing",
-    };
-
-    // Save order to user's orders
-    const userRes = await API.get(`/users/${user.id}`);
-    const updatedOrders = [...(userRes.data.orders || []), order];
-    
-    await API.patch(`/users/${user.id}`, {
-      orders: updatedOrders,
-      address: address,
-    });
-
-    // Also save to separate orders collection for admin
-    try {
-      await API.post("/orders", order);
-    } catch (error) {
-      console.error("Failed to save to orders collection:", error);
-    }
-
-    return order;
+  const handleNextStep = () => {
+    if (validateAddress()) setStep(2);
+    else toast.error("Please check address details");
   };
 
   const handlePayment = async (e) => {
     e.preventDefault();
-
-    // Validate address
-    if (!validateAddress()) {
-      toast.error("Please fill all address fields correctly");
-      return;
-    }
-
-    // Validate payment
-    if (!validatePayment()) {
-      toast.error("Please check payment details");
-      return;
-    }
-
     setLoading(true);
-
     try {
-      // Create order
-      await createOrder();
-      
-      // Clear cart
+      await API.post("/user/orders", { paymentMethod, address });
       await clearCart();
-      
-      toast.success("Order placed successfully!");
-      navigate("/orders");
+      setOrderSuccess(true);
+      setTimeout(() => navigate("/orders"), 3000);
     } catch (error) {
-      console.error("Payment failed:", error);
       toast.error("Payment failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  if (cartItems.length === 0) {
-    return null;
-  }
+  if (orderSuccess) return (
+    <div className="min-h-screen bg-[#FDFCFB] flex items-center justify-center p-6">
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white p-12 rounded-[3rem] shadow-2xl text-center max-w-lg border border-gray-50">
+        <div className="w-24 h-24 bg-emerald-50 text-emerald-500 rounded-[2rem] flex items-center justify-center mx-auto mb-8">
+          <CheckCircle2 size={48} />
+        </div>
+        <h1 className="text-4xl font-black text-gray-900 mb-4">Order Placed!</h1>
+        <p className="text-gray-500 font-medium mb-10">Your artisan treats are being prepared. Redirecting to your orders...</p>
+        <div className="h-1.5 w-full bg-gray-50 rounded-full overflow-hidden">
+          <motion.div initial={{ width: 0 }} animate={{ width: "100%" }} transition={{ duration: 2.8, ease: "linear" }} className="h-full bg-emerald-500" />
+        </div>
+      </motion.div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
-        <button
-          onClick={() => navigate("/cart")}
-          className="flex items-center gap-2 text-gray-600 hover:text-rose-500 mb-6 transition-colors"
-        >
-          <FaArrowLeft /> Back to Cart
-        </button>
+    <div className="min-h-screen bg-[#FDFCFB]">
+      <div className="pt-32 pb-20 max-w-7xl mx-auto px-6">
+        <div className="flex items-center gap-2 text-sm font-bold text-gray-400 mb-4">
+          <span className="hover:text-rose-500 cursor-pointer" onClick={() => navigate("/cart")}>Cart</span>
+          <ChevronRight size={14} />
+          <span className="text-rose-500">Checkout</span>
+        </div>
+        <h1 className="text-4xl lg:text-5xl font-black text-gray-900 mb-12">Secure <span className="text-gradient">Checkout</span></h1>
 
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">Secure Checkout</h1>
+        <div className="grid lg:grid-cols-3 gap-12 items-start">
+          <div className="lg:col-span-2 space-y-8">
+            {/* 🔹 STEP 1: ADDRESS */}
+            <div className={`bg-white rounded-[2.5rem] p-8 shadow-premium border transition-all ${step === 1 ? "border-rose-500 ring-4 ring-rose-50" : "border-gray-50 opacity-60"}`}>
+              <div className="flex items-center gap-4 mb-8">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black ${step === 1 ? "bg-rose-500 text-white" : "bg-gray-100 text-gray-400"}`}>1</div>
+                <h2 className="text-2xl font-black text-gray-900">Shipping Address</h2>
+              </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Order Summary & Address */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Order Summary */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-bold mb-4">Order Summary</h2>
-              
-              <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex justify-between items-center py-2 border-b">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-12 h-12 object-cover rounded"
-                        onError={(e) => {
-                          e.target.src = "https://via.placeholder.com/50x50?text=Cake";
-                        }}
-                      />
-                      <div>
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
-                      </div>
-                    </div>
-                    <span className="font-semibold">₹{item.price * item.quantity}</span>
+              {step === 1 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
+                    <input name="fullName" value={address.fullName} onChange={handleAddressInput} placeholder="Your Name" className="w-full px-6 py-4 bg-gray-50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-rose-50 border border-transparent focus:bg-white transition-all" />
                   </div>
-                ))}
-              </div>
-
-              <div className="mt-4 pt-4 border-t">
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total Amount</span>
-                  <span className="text-rose-600">₹{getTotalPrice()}</span>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Mobile</label>
+                    <input name="mobile" value={address.mobile} onChange={handleAddressInput} placeholder="10-digit number" className="w-full px-6 py-4 bg-gray-50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-rose-50 border border-transparent focus:bg-white transition-all" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">House / Flat No.</label>
+                    <input name="house" value={address.house} onChange={handleAddressInput} placeholder="Apt 101, Floor 2" className="w-full px-6 py-4 bg-gray-50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-rose-50 border border-transparent focus:bg-white transition-all" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Street Address</label>
+                    <input name="street" value={address.street} onChange={handleAddressInput} placeholder="Building, Street Name" className="w-full px-6 py-4 bg-gray-50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-rose-50 border border-transparent focus:bg-white transition-all" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">City</label>
+                    <input name="city" value={address.city} onChange={handleAddressInput} placeholder="City Name" className="w-full px-6 py-4 bg-gray-50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-rose-50 border border-transparent focus:bg-white transition-all" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">State</label>
+                    <input name="state" value={address.state} onChange={handleAddressInput} placeholder="State" className="w-full px-6 py-4 bg-gray-50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-rose-50 border border-transparent focus:bg-white transition-all" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Pincode</label>
+                    <input name="pincode" value={address.pincode} onChange={handleAddressInput} placeholder="6-digit code" className="w-full px-6 py-4 bg-gray-50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-rose-50 border border-transparent focus:bg-white transition-all" />
+                  </div>
+                  <div className="flex items-end">
+                    <button onClick={handleNextStep} className="w-full py-5 bg-gray-900 text-white rounded-2xl font-black text-lg hover:bg-black transition-all">Continue to Payment</button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <p className="text-gray-500 font-bold">{address.fullName}, {address.city} - {address.pincode}</p>
+                  <button onClick={() => setStep(1)} className="text-rose-500 font-black text-sm underline">Edit</button>
+                </div>
+              )}
             </div>
 
-            {/* Delivery Address */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-bold mb-4">Delivery Address</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="fullName"
-                    placeholder="Enter your full name"
-                    value={address.fullName}
-                    onChange={handleAddressInput}
-                    className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-100 ${
-                      addressErrors.fullName ? "border-red-500" : "border-gray-300 focus:border-rose-400"
-                    }`}
-                  />
-                  {addressErrors.fullName && (
-                    <p className="text-red-500 text-sm mt-1">{addressErrors.fullName}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Mobile Number *
-                  </label>
-                  <input
-                    type="tel"
-                    name="mobile"
-                    placeholder="10-digit mobile number"
-                    value={address.mobile}
-                    onChange={handleAddressInput}
-                    className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-100 ${
-                      addressErrors.mobile ? "border-red-500" : "border-gray-300 focus:border-rose-400"
-                    }`}
-                  />
-                  {addressErrors.mobile && (
-                    <p className="text-red-500 text-sm mt-1">{addressErrors.mobile}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    House/Flat No. *
-                  </label>
-                  <input
-                    type="text"
-                    name="house"
-                    placeholder="House/Flat number"
-                    value={address.house}
-                    onChange={handleAddressInput}
-                    className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-100 ${
-                      addressErrors.house ? "border-red-500" : "border-gray-300 focus:border-rose-400"
-                    }`}
-                  />
-                  {addressErrors.house && (
-                    <p className="text-red-500 text-sm mt-1">{addressErrors.house}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Street/Area *
-                  </label>
-                  <input
-                    type="text"
-                    name="street"
-                    placeholder="Street or area name"
-                    value={address.street}
-                    onChange={handleAddressInput}
-                    className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-100 ${
-                      addressErrors.street ? "border-red-500" : "border-gray-300 focus:border-rose-400"
-                    }`}
-                  />
-                  {addressErrors.street && (
-                    <p className="text-red-500 text-sm mt-1">{addressErrors.street}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    City *
-                  </label>
-                  <input
-                    type="text"
-                    name="city"
-                    placeholder="City"
-                    value={address.city}
-                    onChange={handleAddressInput}
-                    className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-100 ${
-                      addressErrors.city ? "border-red-500" : "border-gray-300 focus:border-rose-400"
-                    }`}
-                  />
-                  {addressErrors.city && (
-                    <p className="text-red-500 text-sm mt-1">{addressErrors.city}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Pincode *
-                  </label>
-                  <input
-                    type="text"
-                    name="pincode"
-                    placeholder="6-digit pincode"
-                    value={address.pincode}
-                    onChange={handleAddressInput}
-                    className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-100 ${
-                      addressErrors.pincode ? "border-red-500" : "border-gray-300 focus:border-rose-400"
-                    }`}
-                  />
-                  {addressErrors.pincode && (
-                    <p className="text-red-500 text-sm mt-1">{addressErrors.pincode}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    State *
-                  </label>
-                  <input
-                    type="text"
-                    name="state"
-                    placeholder="State"
-                    value={address.state}
-                    onChange={handleAddressInput}
-                    className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-100 ${
-                      addressErrors.state ? "border-red-500" : "border-gray-300 focus:border-rose-400"
-                    }`}
-                  />
-                  {addressErrors.state && (
-                    <p className="text-red-500 text-sm mt-1">{addressErrors.state}</p>
-                  )}
-                </div>
+            {/* 🔹 STEP 2: PAYMENT */}
+            <div className={`bg-white rounded-[2.5rem] p-8 shadow-premium border transition-all ${step === 2 ? "border-rose-500 ring-4 ring-rose-50" : "border-gray-50 opacity-60"}`}>
+              <div className="flex items-center gap-4 mb-8">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black ${step === 2 ? "bg-rose-500 text-white" : "bg-gray-100 text-gray-400"}`}>2</div>
+                <h2 className="text-2xl font-black text-gray-900">Payment Method</h2>
               </div>
+
+              {step === 2 && (
+                <div className="space-y-8">
+                  <div className="grid grid-cols-2 gap-4">
+                    <button onClick={() => setPaymentMethod("card")} className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-4 ${paymentMethod === "card" ? "border-rose-500 bg-rose-50/50" : "border-gray-100 hover:border-rose-100"}`}>
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${paymentMethod === "card" ? "bg-rose-500 text-white" : "bg-gray-100 text-gray-400"}`}><CreditCard /></div>
+                      <span className="font-black text-sm uppercase tracking-widest">Card</span>
+                    </button>
+                    <button onClick={() => setPaymentMethod("upi")} className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-4 ${paymentMethod === "upi" ? "border-rose-500 bg-rose-50/50" : "border-gray-100 hover:border-rose-100"}`}>
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${paymentMethod === "upi" ? "bg-rose-500 text-white" : "bg-gray-100 text-gray-400"}`}><Smartphone /></div>
+                      <span className="font-black text-sm uppercase tracking-widest">UPI</span>
+                    </button>
+                  </div>
+
+                  {paymentMethod === "card" ? (
+                    <div className="space-y-6 bg-gray-50 p-8 rounded-[2rem] border border-gray-100">
+                      <div className="space-y-1"><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Card Number</label><input name="cardNumber" value={formData.cardNumber} onChange={handlePaymentInput} placeholder="0000 0000 0000 0000" className="w-full px-6 py-4 bg-white rounded-2xl border-none focus:ring-4 focus:ring-rose-100 transition-all shadow-sm" /></div>
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-1"><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Expiry</label><input name="expiryDate" value={formData.expiryDate} onChange={handlePaymentInput} placeholder="MM/YY" className="w-full px-6 py-4 bg-white rounded-2xl border-none focus:ring-4 focus:ring-rose-100 transition-all shadow-sm" /></div>
+                        <div className="space-y-1"><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">CVV</label><input name="cvv" value={formData.cvv} onChange={handlePaymentInput} placeholder="***" className="w-full px-6 py-4 bg-white rounded-2xl border-none focus:ring-4 focus:ring-rose-100 transition-all shadow-sm" /></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-1 bg-gray-50 p-8 rounded-[2rem] border border-gray-100"><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">UPI ID</label><input name="upiId" value={formData.upiId} onChange={handlePaymentInput} placeholder="user@bank" className="w-full px-6 py-4 bg-white rounded-2xl border-none focus:ring-4 focus:ring-rose-100 transition-all shadow-sm" /></div>
+                  )}
+                  <button onClick={handlePayment} disabled={loading} className="w-full py-5 bg-rose-500 text-white rounded-2xl font-black text-lg shadow-xl hover:bg-rose-600 hover:-translate-y-1 transition-all disabled:opacity-50">Complete Secure Payment</button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Right Column - Payment */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm p-6 sticky top-24">
-              <h2 className="text-xl font-bold mb-4">Payment Method</h2>
-
-              <div className="space-y-3 mb-6">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod("card")}
-                  className={`w-full p-4 rounded-lg border-2 transition-all flex items-center gap-3 ${
-                    paymentMethod === "card"
-                      ? "border-rose-500 bg-rose-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <FaCreditCard className={paymentMethod === "card" ? "text-rose-500" : "text-gray-400"} />
-                  <span className="font-medium">Credit/Debit Card</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod("upi")}
-                  className={`w-full p-4 rounded-lg border-2 transition-all flex items-center gap-3 ${
-                    paymentMethod === "upi"
-                      ? "border-rose-500 bg-rose-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <FaMobileAlt className={paymentMethod === "upi" ? "text-rose-500" : "text-gray-400"} />
-                  <span className="font-medium">UPI Payment</span>
-                </button>
-              </div>
-
-              <form onSubmit={handlePayment} className="space-y-4">
-                {paymentMethod === "card" && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Card Number *
-                      </label>
-                      <input
-                        type="text"
-                        name="cardNumber"
-                        placeholder="1234 5678 9012 3456"
-                        value={formData.cardNumber}
-                        onChange={handleChange}
-                        className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-100 ${
-                          errors.cardNumber ? "border-red-500" : "border-gray-300 focus:border-rose-400"
-                        }`}
-                      />
-                      {errors.cardNumber && (
-                        <p className="text-red-500 text-sm mt-1">{errors.cardNumber}</p>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Expiry *
-                        </label>
-                        <input
-                          type="text"
-                          name="expiryDate"
-                          placeholder="MM/YY"
-                          value={formData.expiryDate}
-                          onChange={handleChange}
-                          className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-100 ${
-                            errors.expiryDate ? "border-red-500" : "border-gray-300 focus:border-rose-400"
-                          }`}
-                        />
-                        {errors.expiryDate && (
-                          <p className="text-red-500 text-sm mt-1">{errors.expiryDate}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          CVV *
-                        </label>
-                        <input
-                          type="text"
-                          name="cvv"
-                          placeholder="123"
-                          value={formData.cvv}
-                          onChange={handleChange}
-                          className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-100 ${
-                            errors.cvv ? "border-red-500" : "border-gray-300 focus:border-rose-400"
-                          }`}
-                        />
-                        {errors.cvv && (
-                          <p className="text-red-500 text-sm mt-1">{errors.cvv}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Name on Card *
-                      </label>
-                      <input
-                        type="text"
-                        name="nameOnCard"
-                        placeholder="As shown on card"
-                        value={formData.nameOnCard}
-                        onChange={handleChange}
-                        className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-100 ${
-                          errors.nameOnCard ? "border-red-500" : "border-gray-300 focus:border-rose-400"
-                        }`}
-                      />
-                      {errors.nameOnCard && (
-                        <p className="text-red-500 text-sm mt-1">{errors.nameOnCard}</p>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                {paymentMethod === "upi" && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      UPI ID *
-                    </label>
-                    <input
-                      type="text"
-                      name="upiId"
-                      placeholder="username@bank"
-                      value={formData.upiId}
-                      onChange={handleChange}
-                      className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-100 ${
-                        errors.upiId ? "border-red-500" : "border-gray-300 focus:border-rose-400"
-                      }`}
-                    />
-                    {errors.upiId && (
-                      <p className="text-red-500 text-sm mt-1">{errors.upiId}</p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-2">
-                      You'll receive a payment request on your UPI app
-                    </p>
+          <div className="lg:col-span-1 sticky top-32">
+            <div className="bg-white rounded-[3rem] p-10 shadow-premium border border-gray-50">
+              <h2 className="text-2xl font-black text-gray-900 mb-8">Your Order</h2>
+              <div className="space-y-6 mb-10 max-h-60 overflow-y-auto pr-4 scrollbar-hide">
+                {cartItems.map((item) => (
+                  <div key={item.id} className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl overflow-hidden bg-rose-50 flex-shrink-0"><img src={item.image} alt="" className="w-full h-full object-cover" /></div>
+                    <div className="flex-1 min-w-0"><p className="font-black text-gray-900 text-sm line-clamp-1">{item.name}</p><p className="text-xs text-gray-400 font-bold">Qty: {item.quantity}</p></div>
+                    <p className="font-black text-gray-900">₹{item.price * item.quantity}</p>
                   </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-4 bg-gradient-to-r from-emerald-500 to-green-500 text-white font-bold rounded-lg hover:from-emerald-600 hover:to-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-6"
-                >
-                  {loading ? "Processing..." : `Pay ₹${getTotalPrice()}`}
-                </button>
-
-                <p className="text-xs text-gray-500 text-center mt-4">
-                  By completing this payment, you agree to our Terms of Service and Privacy Policy
-                </p>
-              </form>
+                ))}
+              </div>
+              <div className="space-y-4 border-t border-gray-50 pt-8">
+                <div className="flex justify-between text-gray-400 font-bold"><span>Subtotal</span><span className="text-gray-900">₹{subtotal}</span></div>
+                <div className="flex justify-between text-gray-400 font-bold"><span>Delivery</span><span className={deliveryFee === 0 ? "text-emerald-500" : "text-gray-900"}>{deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}</span></div>
+                <div className="pt-6 border-t border-gray-100 flex justify-between items-end"><p className="text-sm font-black text-gray-400 uppercase tracking-widest">Total</p><p className="text-4xl font-black text-rose-500 leading-none">₹{total}</p></div>
+              </div>
+              <div className="mt-10 p-6 bg-rose-50/50 rounded-2xl border border-rose-100 flex gap-4 text-rose-500"><Info size={20} className="shrink-0" /><p className="text-[10px] font-bold leading-relaxed uppercase tracking-wider">All our artisan treats are baked fresh to order and safely packaged for premium delivery.</p></div>
             </div>
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

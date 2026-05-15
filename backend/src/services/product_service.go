@@ -45,7 +45,7 @@ func (s *ProductService) CreateProduct(input *dto.CreateProductInput) (*schema.P
 	if contentType != "image/jpeg" &&
 		contentType != "image/png" &&
 		contentType != "image/jpg" {
-		return nil, errors.New("only jpg/png images allowed")
+		return nil, errors.New("only jpg/png and jpeg images allowed")
 	}
 
 	mainFile, err := file.Open()

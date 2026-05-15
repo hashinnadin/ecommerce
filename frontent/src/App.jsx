@@ -2,11 +2,14 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import { ToastContainer, Slide } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import Navbar from "./compenent/Navbar/Navbar";
 
 import Register from "./pages/Register";
 import Login from "./pages/Login";
+import VerifyOTP from "./pages/VerifyOTP";
 import Home from "./pages/Home";
 import Cart from "./pages/Cart";
 import Product from "./pages/Products";
@@ -15,6 +18,8 @@ import Wishlist from "./pages/Wishlist";
 import Payment from "./pages/Payment";
 import Orders from "./pages/Orders";
 import OrderDetails from "./pages/OrderDetails";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 import Dashboard from "./admin/Dashboard";
 import AdminProducts from "./admin/AdminProducts";
@@ -26,11 +31,13 @@ import AdminUsers from "./admin/AdminUsers";
 import { useAuth } from "./context/AuthContext";
 
 const Protected = ({ user, children }) => {
-  return user ? children : <Navigate to="/login" replace />;
+  const location = useLocation();
+  return user ? children : <Navigate to="/login" state={{ from: location }} replace />;
 };
 
 const AdminProtected = ({ admin, children }) => {
-  return admin ? children : <Navigate to="/login" replace />;
+  const location = useLocation();
+  return admin ? children : <Navigate to="/login" state={{ from: location }} replace />;
 };
 
 function App() {
@@ -49,7 +56,7 @@ function App() {
     );
   }
 
-  const hideNavbarRoutes = ["/login", "/register", "/admin"];
+  const hideNavbarRoutes = ["/login", "/register", "/verify-otp", "/admin"];
   const hideNavbar = hideNavbarRoutes.some((path) =>
     location.pathname.startsWith(path)
   );
@@ -57,6 +64,19 @@ function App() {
   return (
     <>
       {!hideNavbar && <Navbar />}
+      <ToastContainer 
+        position="bottom-right" 
+        autoClose={3000} 
+        transition={Slide}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
 
       <Routes>
         {/* PUBLIC */}
@@ -82,7 +102,18 @@ function App() {
           path="/register"
           element={user || admin ? <Navigate to="/" /> : <Register />}
         />
-
+        <Route
+          path="/verify-otp"
+          element={user || admin ? <Navigate to="/" /> : <VerifyOTP />}
+        />
+        <Route
+          path="/forgot-password"
+          element={user || admin ? <Navigate to="/" /> : <ForgotPassword />}
+        />
+        <Route
+          path="/reset-password"
+          element={user || admin ? <Navigate to="/" /> : <ResetPassword />}
+        />
         {/* USER PROTECTED */}
         <Route
           path="/cart"

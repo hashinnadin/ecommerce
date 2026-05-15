@@ -51,15 +51,17 @@ func main() {
 	adminService := services.NewAdminService(repo)
 	adminController := controller.NewAdminController(adminService)
 
+	orderService := services.NewOrderService(repo, cartService)
+	orderController := controller.NewOrderController(orderService)
+
 	r := gin.Default()
 
 	// CORS Setup
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
+		AllowOrigins:  []string{"*"},
+		AllowMethods:  []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:  []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders: []string{"Content-Length"},
 	}))
 
 	routes.SetUpRoutes(
@@ -69,6 +71,7 @@ func main() {
 		cartController,
 		wishlistController,
 		adminController,
+		orderController,
 		jwtManager,
 		repo,
 		redis,

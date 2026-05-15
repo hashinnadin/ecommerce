@@ -17,6 +17,7 @@ func SetUpRoutes(
 	cartController *controller.CartController,
 	wishlistController *controller.WishlistController,
 	adminController *controller.AdminController,
+	orderController *controller.OrderController,
 	jwtManager *jwt.Manager,
 	repo *repository.Repository,
 	redisClient *cache.Redis,
@@ -36,8 +37,9 @@ func SetUpRoutes(
 
 	// User routes
 	user := r.Group("/user")
-	user.Use(middleware.AuthMiddleware(jwtManager, redisClient))
+	user.Use(middleware.AuthMiddleware(jwtManager, redisClient, repo))
 	user.GET("/dashboard", authController.Dashboard)
+	user.GET("/profile", authController.Profile)
 
 	// Cart routes (Protected by user middleware)
 	cart := user.Group("/cart")
@@ -58,6 +60,13 @@ func SetUpRoutes(
 		wishlist.POST("/:product_id/cart", wishlistController.MoveToCart)
 	}
 
+	// Orders routes (Protected by user middleware)
+	orders := user.Group("/orders")
+	{
+		orders.POST("", orderController.PlaceOrder)
+		orders.GET("", orderController.GetUserOrders)
+	}
+
 	// Product routes
 	products := r.Group("/products")
 	{
@@ -67,7 +76,7 @@ func SetUpRoutes(
 
 	// Admin routes
 	admin := r.Group("/admin")
-	admin.Use(middleware.AuthMiddleware(jwtManager, redisClient))
+	admin.Use(middleware.AuthMiddleware(jwtManager, redisClient, repo))
 	admin.Use(middleware.AdminMiddleware())
 	{
 		admin.POST("/products", productController.CreateProduct)
@@ -79,7 +88,8 @@ func SetUpRoutes(
 		admin.PUT("/users/:id/block", adminController.BlockUser)
 
 		admin.GET("/orders", adminController.GetOrders)
-		
+		admin.PUT("/orders/:id/status", adminController.UpdateOrderStatus)
+
 		admin.GET("/dashboard", adminController.GetDashboardStats)
 	}
 }

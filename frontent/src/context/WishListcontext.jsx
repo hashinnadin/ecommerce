@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { toast } from "react-toastify";
 import { useAuth } from "./AuthContext";
 import API from "../api";
@@ -12,45 +12,35 @@ export const WishlistProvider = ({ children }) => {
   const [wishlistCount, setWishlistCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-
+  const loadWishlist = useCallback(async () => {
     if (!user) {
       setWishlistItems([]);
       setWishlistCount(0);
       return;
     }
-
-    const loadWishlist = async () => {
-      setLoading(true);
-      try {
-        const res = await API.get(`/users/${user.id}`);
-        if (!isMounted) return;
-
-        // Normalize wishlist items
-        const wishlist = (res.data.wishlist || []).map(item => ({
-          id: item.productId || item.id,
-          name: item.name,
-          price: item.price,
-          image: item.image
-        }));
-        
-        setWishlistItems(wishlist);
-        setWishlistCount(wishlist.length);
-      } catch (error) {
-        console.error("Wishlist load failed:", error);
-        toast.error("Failed to load wishlist");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadWishlist();
-
-    return () => {
-      isMounted = false;
-    };
+    setLoading(true);
+    try {
+      const res = await API.get("/user/wishlist");
+      
+      const wishlist = (res.data.wishlist || []).map(item => ({
+        id: item.product_id,
+        name: item.product?.title || item.product?.name || "Unknown",
+        price: item.product?.price || 0,
+        image: item.product?.main_image || item.product?.image || ""
+      }));
+      
+      setWishlistItems(wishlist);
+      setWishlistCount(wishlist.length);
+    } catch (error) {
+      console.error("Wishlist load failed:", error);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    loadWishlist();
+  }, [loadWishlist]);
 
   const addToWishlist = async (product) => {
     if (!user) {
@@ -58,9 +48,7 @@ export const WishlistProvider = ({ children }) => {
       return;
     }
 
-    const exists = wishlistItems.some(
-      (item) => item.id === product.id
-    );
+    const exists = wishlistItems.some((item) => item.id === product.id);
 
     if (exists) {
       // Remove if exists (toggle behavior)
@@ -69,20 +57,10 @@ export const WishlistProvider = ({ children }) => {
     }
 
     setLoading(true);
-    
     try {
-      const updatedWishlist = [
-        ...wishlistItems,
-        {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          image: product.image,
-        },
-      ];
-
-      await updateWishlist(updatedWishlist);
+      await API.post("/user/wishlist", { product_id: product.id });
       toast.success("Added to wishlist");
+      await loadWishlist();
     } catch (error) {
       console.error("Add to wishlist failed:", error);
       toast.error("Failed to add to wishlist");
@@ -92,44 +70,36 @@ export const WishlistProvider = ({ children }) => {
   };
 
   const removeFromWishlist = async (id) => {
-    const updatedWishlist = wishlistItems.filter(
-      (item) => item.id !== id
-    );
-
-    await updateWishlist(updatedWishlist);
-    toast.success("Removed from wishlist");
-  };
-
-  const clearWishlist = async () => {
-    await updateWishlist([]);
-    toast.success("Wishlist cleared");
-  };
-
-  const updateWishlist = async (updatedWishlist) => {
     try {
-      setWishlistItems(updatedWishlist);
-      setWishlistCount(updatedWishlist.length);
-
-      // Convert to backend format
-      const backendWishlist = updatedWishlist.map(item => ({
-        productId: item.id,
-        name: item.name,
-        price: item.price,
-        image: item.image
-      }));
-
-      await API.patch(`/users/${user.id}`, {
-        wishlist: backendWishlist,
-      });
+      await API.delete(`/user/wishlist/${id}`);
+      toast.success("Removed from wishlist");
+      await loadWishlist();
     } catch (error) {
-      console.error("Wishlist update failed:", error);
-      toast.error("Failed to update wishlist");
-      throw error;
+      console.error("Remove from wishlist failed:", error);
+      toast.error("Failed to remove item");
+    }
+  };
+
+  // The backend doesn't have a clear wishlist API, so we manually remove all
+  const clearWishlist = async () => {
+    if (wishlistItems.length === 0) return;
+    setLoading(true);
+    try {
+      for (const item of wishlistItems) {
+        await API.delete(`/user/wishlist/${item.id}`);
+      }
+      toast.success("Wishlist cleared");
+      await loadWishlist();
+    } catch (error) {
+      console.error("Clear wishlist failed:", error);
+      toast.error("Failed to completely clear wishlist");
+    } finally {
+      setLoading(false);
     }
   };
 
   const isInWishlist = (productId) => {
-    return wishlistItems.some(item => item.id === productId);
+    return wishlistItems.some((item) => item.id === productId);
   };
 
   return (

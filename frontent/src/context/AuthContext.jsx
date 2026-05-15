@@ -18,35 +18,42 @@ export const AuthProvider = ({ children }) => {
   const [loading] = useState(false);
 
   // 🔹 USER LOGIN
-  const loginUser = (userData) => {
+  const loginUser = (userData, token, redirectPath = "/") => {
     // Don't store password in localStorage
     const { password: _, ...safeUserData } = userData;
     localStorage.setItem("user", JSON.stringify(safeUserData));
+    if (token) {
+      localStorage.setItem("token", token);
+    }
     localStorage.removeItem("admin");
 
     setUser(safeUserData);
     setAdmin(null);
 
     toast.success("Login successful!");
-    navigate("/");
+    navigate(redirectPath);
   };
 
   // 🔹 ADMIN LOGIN
-  const loginAdmin = (adminData) => {
+  const loginAdmin = (adminData, token, redirectPath = "/admin") => {
     localStorage.setItem("admin", JSON.stringify(adminData));
+    if (token) {
+      localStorage.setItem("token", token);
+    }
     localStorage.removeItem("user");
 
     setAdmin(adminData);
     setUser(null);
 
     toast.success("Admin login successful!");
-    navigate("/admin");
+    navigate(redirectPath);
   };
 
   // 🔹 LOGOUT
   const logout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("admin");
+    localStorage.removeItem("token");
 
     setUser(null);
     setAdmin(null);

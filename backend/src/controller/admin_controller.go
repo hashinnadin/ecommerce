@@ -89,3 +89,28 @@ func (c *AdminController) GetDashboardStats(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, stats)
 }
+
+func (c *AdminController) UpdateOrderStatus(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid order id format"})
+		return
+	}
+
+	var req struct {
+		Status string `json:"status" binding:"required"`
+	}
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := c.AdminService.UpdateOrderStatus(id, req.Status); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "order status updated successfully"})
+}
+

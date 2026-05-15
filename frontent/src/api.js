@@ -10,7 +10,11 @@ const API = axios.create({
 // Add request interceptor for debugging
 API.interceptors.request.use(
   (config) => {
-    // You can add auth tokens here if needed
+    // Add auth tokens here
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {
@@ -21,6 +25,14 @@ API.interceptors.request.use(
 API.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("admin");
+      if (!window.location.pathname.includes("/login")) {
+        window.location.href = "/login";
+      }
+    }
     console.error("API Error:", error.response?.data || error.message);
     return Promise.reject(error);
   }

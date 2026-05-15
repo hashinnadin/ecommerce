@@ -1,43 +1,23 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
-  FaTruck,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaHome,
-  FaBox,
-  FaShoppingCart,
-  FaUsers,
-  FaSignOutAlt,
-  FaBars,
-  FaTimes,
-  FaTachometerAlt,
-} from "react-icons/fa";
+  CheckCircle, XCircle, ShoppingBag, Calendar, User, Clock, ArrowRight, Package, Truck, Filter, Search
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import API from "../api";
+import AdminNavbar from "./AdminNavbar";
 
 function AdminOrders() {
-  const navigate = useNavigate();
-
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isMobileMenuOpen] = useState(false);
+  const [searchTerm, setSearch] = useState("");
 
-  /* 🔐 ADMIN AUTH CHECK */
-  useEffect(() => {
-    const admin = JSON.parse(localStorage.getItem("admin"));
-    if (!admin) {
-      toast.error("Admin login required");
-      navigate("/login");
-    }
-  }, [navigate]);
-
-  /* 🔹 LOAD ALL USER ORDERS */
   const loadOrders = async () => {
     try {
+      setLoading(true);
       const res = await API.get("/admin/orders");
-      setOrders(res.data || []);
+      const data = Array.isArray(res.data) ? res.data : (res.data.orders || []);
+      setOrders(data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
     } catch {
       toast.error("Failed to load orders!");
     } finally {
@@ -49,154 +29,145 @@ function AdminOrders() {
     loadOrders();
   }, []);
 
-  /* 🔹 UPDATE ORDER STATUS */
-  const updateStatus = async (orderId, newStatus, userId) => {
+  const updateStatus = async (orderId, newStatus) => {
     try {
-      // Assuming a PUT /admin/orders/:id/status endpoint will be added in future
       await API.put(`/admin/orders/${orderId}/status`, { status: newStatus });
-      toast.success("Order status updated!");
+      toast.success(`Order #${orderId.toString().slice(-4)} status: ${newStatus}`);
       loadOrders();
     } catch {
       toast.error("Failed to update status!");
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "success":
-        return "bg-emerald-100 text-emerald-800";
-      case "processing":
-        return "bg-amber-100 text-amber-800";
-      case "canceled":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+  const getStatusColor = (status = "") => {
+    const s = status.toLowerCase();
+    if (s.includes("succ") || s.includes("deliv")) return "emerald";
+    if (s.includes("pend") || s.includes("proc")) return "amber";
+    if (s.includes("can")) return "rose";
+    return "gray";
   };
 
-  const logoutAdmin = () => {
-    localStorage.removeItem("admin");
-    navigate("/login");
-  };
+  const filtered = orders.filter(o => 
+    o.id.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (o.user?.name || "").toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const menuItems = [
-    { path: "/admin", label: "Dashboard", icon: <FaHome /> },
-    { path: "/admin/products", label: "Products", icon: <FaBox /> },
-    { path: "/admin/orders", label: "Orders", icon: <FaShoppingCart /> },
-    { path: "/admin/users", label: "Users", icon: <FaUsers /> },
-  ];
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading orders...
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="w-12 h-12 border-4 border-rose-100 border-t-rose-500 rounded-full"></motion.div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F9F8F6] to-[#EFE9E3]">
-      {/* SIDEBAR */}
-      <aside
-        className={`fixed top-0 left-0 h-screen bg-white border-r shadow-xl z-40 transition-all
-        ${isSidebarOpen ? "w-64" : "w-20"}
-        ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
-      >
-        <div className="p-6 border-b flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#C9B59C] to-[#B8A48B] flex items-center justify-center text-white">
-              <FaTachometerAlt />
-            </div>
-            {isSidebarOpen && (
-              <div>
-                <h1 className="font-bold text-lg">Admin Panel</h1>
-                <p className="text-xs">Orders</p>
-              </div>
-            )}
+    <div className="min-h-screen bg-[#FDFCFB] flex">
+      <AdminNavbar />
+
+      {/* dY"1 MAIN CONTENT */}
+      <main className="flex-1 lg:ml-72 p-6 md:p-12 mt-16 lg:mt-0 relative">
+        <header className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-8 mb-16 relative z-10">
+          <div>
+            <nav className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4">
+                <Truck size={12} /> Fulfillment Dashboard
+            </nav>
+            <h1 className="text-5xl lg:text-7xl font-black text-gray-900 tracking-tighter leading-none mb-4">Order <span className="text-gradient">Manager</span></h1>
+            <p className="text-gray-500 font-bold text-lg">Oversee and accelerate your artisan delivery workflow.</p>
           </div>
-          <button
-            className="hidden lg:block"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          >
-            {isSidebarOpen ? <FaTimes /> : <FaBars />}
-          </button>
-        </div>
 
-        <nav className="p-4 space-y-2">
-          {menuItems.map((item) => (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100"
-            >
-              {item.icon}
-              {isSidebarOpen && item.label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="p-4 border-t absolute bottom-0 w-full">
-          <button
-            onClick={logoutAdmin}
-            className="w-full bg-red-500 text-white p-3 rounded-lg flex items-center justify-center gap-2"
-          >
-            <FaSignOutAlt /> {isSidebarOpen && "Logout"}
-          </button>
-        </div>
-      </aside>
-
-      {/* MAIN */}
-      <main
-        className={`${
-          isSidebarOpen ? "lg:ml-64" : "lg:ml-20"
-        } transition-all p-8`}
-      >
-        <h1 className="text-3xl font-bold mb-6">Order Management</h1>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {orders.map((order) => (
-            <div key={order.orderId} className="bg-white p-6 rounded shadow">
-              <h3 className="font-bold">Order #{order.orderId}</h3>
-              <p className="text-sm">User ID: {order.userId}</p>
-
-              <span
-                className={`inline-block px-3 py-1 mt-2 rounded-full ${getStatusColor(
-                  order.status
-                )}`}
-              >
-                {order.status || "processing"}
-              </span>
-
-              <p className="mt-3 font-semibold">₹{order.total}</p>
-
-              <div className="flex flex-col gap-2 mt-4">
-                <button
-                  onClick={() =>
-                    updateStatus(order.orderId, "processing", order.userId)
-                  }
-                  className="bg-amber-100 p-2 rounded"
-                >
-                  <FaTruck /> Processing
-                </button>
-                <button
-                  onClick={() =>
-                    updateStatus(order.orderId, "success", order.userId)
-                  }
-                  className="bg-emerald-100 p-2 rounded"
-                >
-                  <FaCheckCircle /> Complete
-                </button>
-                <button
-                  onClick={() =>
-                    updateStatus(order.orderId, "canceled", order.userId)
-                  }
-                  className="bg-red-100 p-2 rounded"
-                >
-                  <FaTimesCircle /> Cancel
-                </button>
-              </div>
+          <div className="flex flex-col md:flex-row w-full xl:w-auto gap-4">
+            <div className="relative flex-1 md:w-96">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
+                <input 
+                    placeholder="Search by ID or Customer..." 
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-14 pr-6 py-4 bg-white/70 backdrop-blur-xl border border-white rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-rose-50 transition-all shadow-premium text-sm font-bold" 
+                />
             </div>
-          ))}
+            <button className="p-5 bg-white border border-gray-100 rounded-[1.5rem] text-gray-400 shadow-premium hover:text-rose-500 transition-all"><Filter size={22} /></button>
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-10 relative z-10">
+          <AnimatePresence mode="popLayout">
+            {filtered.length === 0 ? (
+              <div className="col-span-full py-40 text-center bg-white rounded-[4rem] border border-dashed border-gray-100">
+                <ShoppingBag className="text-gray-200 mx-auto mb-6" size={64} />
+                <h3 className="text-2xl font-black text-gray-900 mb-2">No Active Orders</h3>
+                <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Everything is up to date</p>
+              </div>
+            ) : (
+              filtered.map((order, i) => {
+                const color = getStatusColor(order.status);
+                return (
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0, x: -30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ delay: i * 0.05 }}
+                    key={order.id}
+                    className="bg-white rounded-[3.5rem] p-10 shadow-premium hover:shadow-[0_40px_80px_-30px_rgba(0,0,0,0.08)] border border-gray-50 group transition-all duration-500 flex flex-col gap-10"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 bg-gray-50 text-gray-300 rounded-[1.5rem] flex items-center justify-center border border-gray-50 group-hover:bg-rose-50 group-hover:text-rose-500 transition-all duration-500 shadow-sm">
+                          <Package size={28} />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Ref ID</p>
+                          <h3 className="font-black text-gray-900 text-xl tracking-tight">#{order.id.toString().slice(-8).toUpperCase()}</h3>
+                        </div>
+                      </div>
+                      <div className={`px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border bg-${color}-50 text-${color}-600 border-${color}-100 shadow-sm`}>
+                        {order.status || "processing"}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Customer</p>
+                        <p className="text-gray-900 font-black flex items-center gap-2 tracking-tight text-sm"><User size={14} className="text-rose-500" /> {order.user?.name || `User ${order.user_id}`}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Date</p>
+                        <p className="text-gray-900 font-black flex items-center gap-2 tracking-tight text-sm"><Calendar size={14} className="text-blue-500" /> {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
+                      </div>
+                      <div className="col-span-2 md:col-span-1">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Bill</p>
+                        <p className="text-3xl font-black text-gray-900 tracking-tighter">₹{order.total_amount || order.total}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-4 pt-8 border-t border-gray-100">
+                      <button
+                        onClick={() => updateStatus(order.id, "processing")}
+                        className="flex-1 px-6 py-4 bg-gray-50 text-amber-600 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-amber-600 hover:text-white transition-all shadow-sm"
+                      >
+                        <Clock size={16} /> Process
+                      </button>
+                      <button
+                        onClick={() => updateStatus(order.id, "success")}
+                        className="flex-1 px-6 py-4 bg-gray-50 text-emerald-600 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
+                      >
+                        <CheckCircle size={16} /> Deliver
+                      </button>
+                      <button
+                        onClick={() => updateStatus(order.id, "canceled")}
+                        className="flex-1 px-6 py-4 bg-gray-50 text-rose-600 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                      >
+                        <XCircle size={16} /> Cancel
+                      </button>
+                      <button 
+                         onClick={() => navigate(`/admin/orders/${order.id}`)}
+                         className="p-4 bg-gray-900 text-white rounded-2xl hover:bg-black transition-all shadow-lg"
+                      >
+                         <ArrowRight size={20} />
+                      </button>
+                    </div>
+                  </motion.div>
+                )
+              })
+            )}
+          </AnimatePresence>
         </div>
       </main>
     </div>

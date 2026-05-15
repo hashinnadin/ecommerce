@@ -57,14 +57,20 @@ func (s *AdminService) GetUsers() ([]schema.User, error) {
 	return users, nil
 }
 
-func (s *AdminService) GetOrders() ([]interface{}, error) {
-	// Orders schema is not implemented yet, returning empty list for now
-	return []interface{}{}, nil
+func (s *AdminService) GetOrders() ([]schema.Order, error) {
+	var orders []schema.Order
+	err := s.Repo.GetDB().
+		Preload("Items.Product").
+		Preload("User").
+		Order("created_at desc").
+		Find(&orders).Error
+	return orders, err
 }
 
 func (s *AdminService) GetDashboardStats() (*dto.DashboardStatsResponse, error) {
 	var totalUsers int64
 	var totalProducts int64
+	var totalOrders int64
 
 	if err := s.Repo.GetDB().Model(&schema.User{}).Count(&totalUsers).Error; err != nil {
 		return nil, err
@@ -74,8 +80,23 @@ func (s *AdminService) GetDashboardStats() (*dto.DashboardStatsResponse, error) 
 		return nil, err
 	}
 
+	if err := s.Repo.GetDB().Model(&schema.Order{}).Count(&totalOrders).Error; err != nil {
+		return nil, err
+	}
+
 	return &dto.DashboardStatsResponse{
 		TotalUsers:    totalUsers,
 		TotalProducts: totalProducts,
+		TotalOrders:   totalOrders,
 	}, nil
 }
+
+func (s *AdminService) UpdateOrderStatus(orderID uuid.UUID, status string) error {
+	var order schema.Order
+	if err := s.Repo.FindByID(&order, orderID); err != nil {
+		return errors.New("order not found")
+	}
+
+	return s.Repo.GetDB().Model(&order).Update("status", status).Error
+}
+
