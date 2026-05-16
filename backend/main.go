@@ -42,17 +42,22 @@ func main() {
 	productService := services.NewProductService(repo)
 	productController := controller.NewProductController(productService)
 
+	userService := services.NewUserService(repo)
+	userController := controller.NewUserController(userService)
+
 	cartService := services.NewCartService(repo)
 	cartController := controller.NewCartController(cartService)
 
 	wishlistService := services.NewWishlistService(repo)
 	wishlistController := controller.NewWishlistController(wishlistService, cartService)
 
-	adminService := services.NewAdminService(repo)
+	adminService := services.NewAdminService(repo, redis)
 	adminController := controller.NewAdminController(adminService)
 
-	orderService := services.NewOrderService(repo, cartService)
+	paymentService := services.NewPaymentService(repo, cfg)
+	orderService := services.NewOrderService(repo, cartService, paymentService)
 	orderController := controller.NewOrderController(orderService)
+	paymentController := controller.NewPaymentController(paymentService, orderService, cartService)
 
 	r := gin.Default()
 
@@ -70,8 +75,10 @@ func main() {
 		productController,
 		cartController,
 		wishlistController,
+		userController,
 		adminController,
 		orderController,
+		paymentController,
 		jwtManager,
 		repo,
 		redis,

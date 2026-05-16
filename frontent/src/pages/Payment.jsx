@@ -76,13 +76,61 @@ function Payment() {
     e.preventDefault();
     setLoading(true);
     try {
-      await API.post("/user/orders", { paymentMethod, address });
-      await clearCart();
-      setOrderSuccess(true);
-      setTimeout(() => navigate("/orders"), 3000);
+      // 1. Create Order in Backend (Returns Razorpay Order ID if online)
+      const res = await API.post("/user/orders", { paymentMethod, address });
+      const orderData = res.data;
+
+      if (paymentMethod === "COD") {
+        await clearCart();
+        setOrderSuccess(true);
+        setTimeout(() => navigate("/orders"), 3000);
+        return;
+      }
+
+      // 2. Razorpay Payment
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_your_key", // Fallback for safety
+        amount: total * 100,
+        currency: "INR",
+        name: "Artisan Bakery",
+        description: "Order Payment",
+        order_id: orderData.razorpay_order_id,
+        handler: async function (response) {
+          try {
+            // 3. Verify Payment on Backend
+            await API.post("/user/payment/verify", {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              my_order_id: orderData.id
+            });
+            
+            await clearCart();
+            setOrderSuccess(true);
+            setTimeout(() => navigate("/orders"), 3000);
+          } catch (error) {
+            toast.error("Payment verification failed!");
+          }
+        },
+        prefill: {
+          name: address.fullName,
+          email: user?.email,
+          contact: address.mobile
+        },
+        theme: {
+          color: "#f43f5e" // rose-500
+        },
+        modal: {
+          ondismiss: function() {
+            setLoading(false);
+          }
+        }
+      };
+
+      const rzp1 = new window.Razorpay(options);
+      rzp1.open();
     } catch (error) {
-      toast.error("Payment failed. Please try again.");
-    } finally {
+      toast.error(error.response?.data?.error || "Failed to create order");
       setLoading(false);
     }
   };
@@ -172,14 +220,18 @@ function Payment() {
 
               {step === 2 && (
                 <div className="space-y-8">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <button onClick={() => setPaymentMethod("card")} className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-4 ${paymentMethod === "card" ? "border-rose-500 bg-rose-50/50" : "border-gray-100 hover:border-rose-100"}`}>
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${paymentMethod === "card" ? "bg-rose-500 text-white" : "bg-gray-100 text-gray-400"}`}><CreditCard /></div>
-                      <span className="font-black text-sm uppercase tracking-widest">Card</span>
+                      <span className="font-black text-[10px] uppercase tracking-widest">Online</span>
                     </button>
                     <button onClick={() => setPaymentMethod("upi")} className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-4 ${paymentMethod === "upi" ? "border-rose-500 bg-rose-50/50" : "border-gray-100 hover:border-rose-100"}`}>
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${paymentMethod === "upi" ? "bg-rose-500 text-white" : "bg-gray-100 text-gray-400"}`}><Smartphone /></div>
-                      <span className="font-black text-sm uppercase tracking-widest">UPI</span>
+                      <span className="font-black text-[10px] uppercase tracking-widest">UPI</span>
+                    </button>
+                    <button onClick={() => setPaymentMethod("COD")} className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-4 ${paymentMethod === "COD" ? "border-rose-500 bg-rose-50/50" : "border-gray-100 hover:border-rose-100"}`}>
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${paymentMethod === "COD" ? "bg-rose-500 text-white" : "bg-gray-100 text-gray-400"}`}><Truck /></div>
+                      <span className="font-black text-[10px] uppercase tracking-widest">COD</span>
                     </button>
                   </div>
 

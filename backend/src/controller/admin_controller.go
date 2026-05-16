@@ -114,3 +114,59 @@ func (c *AdminController) UpdateOrderStatus(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "order status updated successfully"})
 }
 
+func (c *AdminController) GetOrderByID(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid order id format"})
+		return
+	}
+
+	order, err := c.AdminService.GetOrderByID(id)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Map to a response that includes user and nested address
+	resp := gin.H{
+		"id":           order.ID,
+		"total_amount": order.TotalAmount,
+		"status":       order.Status,
+		"payment_method": order.PaymentMethod,
+		"created_at":   order.CreatedAt,
+		"user": gin.H{
+			"name":  order.User.Name,
+			"email": order.User.Email,
+		},
+		"address": gin.H{
+			"fullName": order.FullName,
+			"mobile":   order.Mobile,
+			"house":    order.House,
+			"street":   order.Street,
+			"city":     order.City,
+			"state":    order.State,
+			"pincode":  order.Pincode,
+		},
+		"items": func() []gin.H {
+			var items []gin.H
+			for _, item := range order.Items {
+				items = append(items, gin.H{
+					"id":         item.ID,
+					"product_id": item.ProductID,
+					"quantity":   item.Quantity,
+					"price":      item.Price,
+					"product": gin.H{
+						"id":         item.Product.ID,
+						"title":      item.Product.Title,
+						"main_image": item.Product.MainImage,
+						"category":   item.Product.Category,
+					},
+				})
+			}
+			return items
+		}(),
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}
+

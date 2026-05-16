@@ -109,8 +109,9 @@ function Navbar() {
             {user || admin ? (
               <div className="flex items-center gap-4 ml-2">
                 <button 
-                  onClick={() => navigate(admin ? "/admin" : "/orders")}
-                  className="w-10 h-10 bg-rose-100 text-rose-500 rounded-2xl flex items-center justify-center font-black hover:bg-rose-200 transition-colors"
+                  onClick={() => navigate(admin ? "/admin" : "/profile")}
+                  className="w-10 h-10 bg-rose-100 text-rose-500 rounded-2xl flex items-center justify-center font-black hover:bg-rose-200 transition-colors shadow-sm"
+                  title="View Profile"
                 >
                   {(user?.name || admin?.name || "A").charAt(0).toUpperCase()}
                 </button>
@@ -180,6 +181,15 @@ function Navbar() {
                   className="flex items-center gap-4 p-4 rounded-2xl font-bold text-gray-700"
                 >
                   <FaShoppingCart /> Cart ({cartCount})
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/profile"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-4 p-4 rounded-2xl font-bold text-gray-700"
+                >
+                  <FaUser /> Profile
                 </Link>
               </li>
             </ul>

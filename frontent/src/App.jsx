@@ -20,12 +20,14 @@ import Orders from "./pages/Orders";
 import OrderDetails from "./pages/OrderDetails";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import Profile from "./pages/Profile";
 
 import Dashboard from "./admin/Dashboard";
 import AdminProducts from "./admin/AdminProducts";
 import AdminAddProducts from "./admin/AdminAddProducts";
 import AdminEditProduct from "./admin/AdminEditProduct";
 import AdminOrders from "./admin/AdminOrders";
+import AdminOrderDetails from "./admin/AdminOrderDetails";
 import AdminUsers from "./admin/AdminUsers";
 
 import { useAuth } from "./context/AuthContext";
@@ -148,6 +150,14 @@ function App() {
           }
         />
         <Route
+          path="/profile"
+          element={
+            <Protected user={user}>
+              <Profile />
+            </Protected>
+          }
+        />
+        <Route
           path="/orders/:id"
           element={
             <Protected user={user}>
@@ -194,6 +204,14 @@ function App() {
           element={
             <AdminProtected admin={admin}>
               <AdminOrders />
+            </AdminProtected>
+          }
+        />
+        <Route
+          path="/admin/orders/:id"
+          element={
+            <AdminProtected admin={admin}>
+              <AdminOrderDetails />
             </AdminProtected>
           }
         />

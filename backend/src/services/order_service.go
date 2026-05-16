@@ -10,14 +10,16 @@ import (
 )
 
 type OrderService struct {
-	Repo        repository.PgSQLRepository
-	CartService *CartService
+	Repo           repository.PgSQLRepository
+	CartService    *CartService
+	PaymentService *PaymentService
 }
 
-func NewOrderService(repo repository.PgSQLRepository, cartService *CartService) *OrderService {
+func NewOrderService(repo repository.PgSQLRepository, cartService *CartService, paymentService *PaymentService) *OrderService {
 	return &OrderService{
-		Repo:        repo,
-		CartService: cartService,
+		Repo:           repo,
+		CartService:    cartService,
+		PaymentService: paymentService,
 	}
 }
 
@@ -109,9 +111,25 @@ func (s *OrderService) PlaceOrder(userID uuid.UUID, req *dto.PlaceOrderRequest) 
 			return err
 		}
 
-		// 6. Clear Cart (Hard Delete items within this tx)
-		if err := txRepo.GetDB().Unscoped().Where("cart_id = ?", cart.ID).Delete(&schema.CartItem{}).Error; err != nil {
-			return err
+		// 6. Integrate Razorpay if Payment Method is Online
+		if req.PaymentMethod != "COD" {
+			razorpayOrderID, err := s.PaymentService.CreateRazorpayOrder(totalAmount, newOrder.ID.String())
+			if err != nil {
+				return err
+			}
+			newOrder.RazorpayOrderID = razorpayOrderID
+			
+			// Save the Razorpay Order ID to our order record
+			if err := txRepo.GetDB().Model(&newOrder).Update("razorpay_order_id", razorpayOrderID).Error; err != nil {
+				return err
+			}
+		}
+
+		// 7. Clear Cart (Only for COD - for Online, we clear it after verification)
+		if req.PaymentMethod == "COD" {
+			if err := txRepo.GetDB().Unscoped().Where("cart_id = ?", cart.ID).Delete(&schema.CartItem{}).Error; err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -150,4 +168,11 @@ func (s *OrderService) GetAllOrders() ([]schema.Order, error) {
 		Order("created_at desc").
 		Find(&orders).Error
 	return orders, err
+}
+func (s *OrderService) UpdateOrderStatus(orderID uuid.UUID, status string) error {
+	var order schema.Order
+	if err := s.Repo.FindByID(&order, orderID); err != nil {
+		return errors.New("order not found")
+	}
+	return s.Repo.GetDB().Model(&order).Update("status", status).Error
 }

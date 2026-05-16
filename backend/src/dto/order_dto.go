@@ -20,6 +20,7 @@ type OrderResponse struct {
 	CreatedAt     string              `json:"created_at"`
 	Address       AddressDTO          `json:"address"`
 	Items         []OrderItemResponse `json:"items"`
+	RazorpayOrderID string            `json:"razorpay_order_id"`
 }
 
 type AddressDTO struct {

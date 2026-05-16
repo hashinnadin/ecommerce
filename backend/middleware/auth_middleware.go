@@ -49,15 +49,29 @@ func AuthMiddleware(jwtManager *jwt.Manager, redisClient *cache.Redis, repo *rep
 			return
 		}
 
-		// Check if user is blocked in database
-		var userStatus struct {
-			IsBlocked bool `gorm:"column:is_blocked"`
+		// Check if user is blocked (Optimized with Redis)
+		blockedKey := "blocked:" + userID
+		isBlocked, err := redisClient.Client.Get(cache.Ctx, blockedKey).Result()
+		if err == nil && isBlocked == "true" {
+			c.JSON(constant.UNAUTHORIZED, gin.H{"error": "Your account has been suspended"})
+			c.Abort()
+			return
 		}
-		if err := repo.DB.Table("users").Select("is_blocked").Where("id = ?", userID).First(&userStatus).Error; err == nil {
-			if userStatus.IsBlocked {
-				c.JSON(constant.UNAUTHORIZED, gin.H{"error": "Your account has been suspended"})
-				c.Abort()
-				return
+
+		// Fallback to DB if not in Redis (or check DB anyway to be safe)
+		if err != nil { // Redis Nil or Error
+			var userStatus struct {
+				IsBlocked bool `gorm:"column:is_blocked"`
+			}
+			if err := repo.DB.Table("users").Select("is_blocked").Where("id = ?", userID).First(&userStatus).Error; err == nil {
+				if userStatus.IsBlocked {
+					// Cache it in Redis for next time
+					redisClient.Client.Set(cache.Ctx, blockedKey, "true", 0)
+					
+					c.JSON(constant.UNAUTHORIZED, gin.H{"error": "Your account has been suspended"})
+					c.Abort()
+					return
+				}
 			}
 		}
 

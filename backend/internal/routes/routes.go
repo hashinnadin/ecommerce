@@ -16,8 +16,10 @@ func SetUpRoutes(
 	productController *controller.ProductController,
 	cartController *controller.CartController,
 	wishlistController *controller.WishlistController,
+	userController *controller.UserController,
 	adminController *controller.AdminController,
 	orderController *controller.OrderController,
+	paymentController *controller.PaymentController,
 	jwtManager *jwt.Manager,
 	repo *repository.Repository,
 	redisClient *cache.Redis,
@@ -38,8 +40,12 @@ func SetUpRoutes(
 	// User routes
 	user := r.Group("/user")
 	user.Use(middleware.AuthMiddleware(jwtManager, redisClient, repo))
-	user.GET("/dashboard", authController.Dashboard)
-	user.GET("/profile", authController.Profile)
+	{
+		user.GET("/profile", userController.GetProfile)
+		user.PUT("/profile", userController.UpdateProfile)
+		user.POST("/change-password", userController.ChangePassword)
+		user.GET("/dashboard", authController.Dashboard)
+	}
 
 	// Cart routes (Protected by user middleware)
 	cart := user.Group("/cart")
@@ -67,6 +73,8 @@ func SetUpRoutes(
 		orders.GET("", orderController.GetUserOrders)
 	}
 
+	user.POST("/payment/verify", paymentController.VerifyPayment)
+
 	// Product routes
 	products := r.Group("/products")
 	{
@@ -88,6 +96,7 @@ func SetUpRoutes(
 		admin.PUT("/users/:id/block", adminController.BlockUser)
 
 		admin.GET("/orders", adminController.GetOrders)
+		admin.GET("/orders/:id", adminController.GetOrderByID)
 		admin.PUT("/orders/:id/status", adminController.UpdateOrderStatus)
 
 		admin.GET("/dashboard", adminController.GetDashboardStats)

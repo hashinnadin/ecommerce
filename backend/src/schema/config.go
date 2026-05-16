@@ -31,4 +31,8 @@ type Config struct {
 		Length        int
 		ExpiryMinutes int
 	}
+	Razorpay struct {
+		KeyID     string
+		KeySecret string
+	}
 }

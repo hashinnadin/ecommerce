@@ -24,6 +24,8 @@ type User struct {
 	City     string `json:"city"`
 	Pincode  string `json:"pincode"`
 	State    string `json:"state"`
+	Avatar   string `json:"avatar"`
+	AvatarPublicID string `json:"avatar_public_id"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

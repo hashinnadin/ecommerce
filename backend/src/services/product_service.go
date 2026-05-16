@@ -130,6 +130,8 @@ func (s *ProductService) UpdateProduct(
 ) (*schema.Product, error) {
 
 	var updatedProduct *schema.Product
+	var oldPublicID string
+	var newUploadPublicID string
 
 	err := s.Repo.Transaction(func(txRepo repository.PgSQLRepository) error {
 		var product schema.Product
@@ -137,7 +139,34 @@ func (s *ProductService) UpdateProduct(
 			return errors.New("product not found")
 		}
 
+		oldPublicID = product.MainImagePublicID
 		updates := map[string]interface{}{}
+
+		// Handle Image Update
+		if req.MainImage != nil {
+			file := req.MainImage
+			if file.Size > 2*1024*1024 {
+				return errors.New("file too large")
+			}
+			contentType := file.Header.Get("Content-Type")
+			if contentType != "image/jpeg" && contentType != "image/png" && contentType != "image/jpg" {
+				return errors.New("only jpg/png and jpeg images allowed")
+			}
+
+			mainFile, err := file.Open()
+			if err != nil {
+				return fmt.Errorf("failed to open image: %w", err)
+			}
+			defer mainFile.Close()
+
+			uploadResult, err := uploads.UploadImageFile(mainFile, file.Filename)
+			if err != nil {
+				return fmt.Errorf("image upload failed: %w", err)
+			}
+			newUploadPublicID = uploadResult.PublicID
+			updates["main_image"] = uploadResult.URL
+			updates["main_image_public_id"] = uploadResult.PublicID
+		}
 
 		if req.Title != nil {
 			updates["title"] = *req.Title
@@ -187,7 +216,16 @@ func (s *ProductService) UpdateProduct(
 	})
 
 	if err != nil {
+		// If transaction failed and we uploaded a new image, cleanup the new image
+		if newUploadPublicID != "" {
+			uploads.DeleteImage(newUploadPublicID)
+		}
 		return nil, err
+	}
+
+	// If transaction succeeded and we uploaded a new image, delete the old one
+	if newUploadPublicID != "" && oldPublicID != "" {
+		uploads.DeleteImage(oldPublicID)
 	}
 
 	return updatedProduct, nil

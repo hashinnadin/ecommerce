@@ -22,4 +22,6 @@ type UpdateProductInput struct {
 	Price       *int64  `form:"price" binding:"omitempty,gt=0"`
 	Stock       *int    `form:"stock" binding:"omitempty,gte=0"`
 	InStock     *bool   `form:"in_stock"`
+
+	MainImage *multipart.FileHeader `form:"image"`
 }

@@ -48,6 +48,10 @@ func LoadConfig() *schema.Config {
 	cfg.OTP.Length = getEnvAsInt("OTP_LENGTH", 5)
 	cfg.OTP.ExpiryMinutes = getEnvAsInt("OTP_EXPIRY_MINUTES", 5)
 
+	//razorpay
+	cfg.Razorpay.KeyID = getEnv("RAZORPAY_KEY_ID", "")
+	cfg.Razorpay.KeySecret = getEnv("RAZORPAY_KEY_SECRET", "")
+
 	return cfg
 }
 

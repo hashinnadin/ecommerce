@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"myapp/internal/cache"
 	"myapp/src/dto"
 	"myapp/src/repository"
 	"myapp/src/schema"
@@ -10,11 +11,12 @@ import (
 )
 
 type AdminService struct {
-	Repo repository.PgSQLRepository
+	Repo  repository.PgSQLRepository
+	Redis *cache.Redis
 }
 
-func NewAdminService(repo repository.PgSQLRepository) *AdminService {
-	return &AdminService{Repo: repo}
+func NewAdminService(repo repository.PgSQLRepository, redis *cache.Redis) *AdminService {
+	return &AdminService{Repo: repo, Redis: redis}
 }
 
 func (s *AdminService) UpdateUser(userID uuid.UUID, req *dto.UpdateUserRequest) error {
@@ -41,12 +43,22 @@ func (s *AdminService) UpdateUser(userID uuid.UUID, req *dto.UpdateUserRequest) 
 }
 
 func (s *AdminService) BlockUser(userID uuid.UUID, isBlocked bool) error {
-	var user schema.User
-	if err := s.Repo.FindByID(&user, userID); err != nil {
-		return errors.New("user not found")
+	err := s.Repo.GetDB().Model(&schema.User{}).Where("id = ?", userID).Update("is_blocked", isBlocked).Error
+	if err != nil {
+		return err
 	}
 
-	return s.Repo.GetDB().Model(&user).Update("is_blocked", isBlocked).Error
+	// Update Redis cache for real-time revocation
+	key := "blocked:" + userID.String()
+	if isBlocked {
+		// Set a "blocked" flag in Redis (expires in 24h or until unblocked)
+		s.Redis.Client.Set(cache.Ctx, key, "true", 0)
+	} else {
+		// Remove the flag if unblocked
+		s.Redis.Client.Del(cache.Ctx, key)
+	}
+
+	return nil
 }
 
 func (s *AdminService) GetUsers() ([]schema.User, error) {
@@ -98,5 +110,17 @@ func (s *AdminService) UpdateOrderStatus(orderID uuid.UUID, status string) error
 	}
 
 	return s.Repo.GetDB().Model(&order).Update("status", status).Error
+}
+
+func (s *AdminService) GetOrderByID(orderID uuid.UUID) (*schema.Order, error) {
+	var order schema.Order
+	err := s.Repo.GetDB().
+		Preload("Items.Product").
+		Preload("User").
+		First(&order, "id = ?", orderID).Error
+	if err != nil {
+		return nil, errors.New("order not found")
+	}
+	return &order, nil
 }
 
