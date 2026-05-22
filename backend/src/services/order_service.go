@@ -174,5 +174,18 @@ func (s *OrderService) UpdateOrderStatus(orderID uuid.UUID, status string) error
 	if err := s.Repo.FindByID(&order, orderID); err != nil {
 		return errors.New("order not found")
 	}
-	return s.Repo.GetDB().Model(&order).Update("status", status).Error
+
+	return s.Repo.Transaction(func(txRepo repository.PgSQLRepository) error {
+		if err := txRepo.GetDB().Model(&order).Update("status", status).Error; err != nil {
+			return err
+		}
+
+		if status == "SUCCESS" {
+			// Clear the user's cart after successful payment
+			if err := s.CartService.WithRepo(txRepo).ClearCart(order.UserID); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }

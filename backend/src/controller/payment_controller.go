@@ -30,13 +30,6 @@ type VerifyPaymentRequest struct {
 }
 
 func (c *PaymentController) VerifyPayment(ctx *gin.Context) {
-	userIDStr, exists := ctx.Get("user_id")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
-	userID, _ := uuid.Parse(userIDStr.(string))
-
 	var req VerifyPaymentRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -50,21 +43,18 @@ func (c *PaymentController) VerifyPayment(ctx *gin.Context) {
 	}
 
 	// 2. Update Order Status in our DB
-	myOrderID, err := uuid.Parse(req.MyOrderID)
+	orderID, err := uuid.Parse(req.MyOrderID)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid order id"})
 		return
 	}
 
-	if err := c.OrderService.UpdateOrderStatus(myOrderID, "PAID"); err != nil {
+	// Update order status to PAID/SUCCESS
+	// We'll use AdminService or OrderService to update the status.
+	// Actually, let's just use the repo here or add a method to OrderService.
+	if err := c.OrderService.UpdateOrderStatus(orderID, "SUCCESS"); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update order status"})
 		return
-	}
-
-	// 3. Clear Cart
-	if err := c.CartService.ClearCart(userID); err != nil {
-		// Log error but don't fail payment verification since payment is already successful
-		// logger.Log.Error("failed to clear cart after payment:", err)
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "payment verified and order confirmed"})

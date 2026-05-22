@@ -57,11 +57,11 @@ func (c *OrderController) PlaceOrder(ctx *gin.Context) {
 	}
 
 	resp := dto.OrderResponse{
-		ID:            order.ID.String(),
-		TotalAmount:   order.TotalAmount,
-		Status:        string(order.Status),
-		PaymentMethod: order.PaymentMethod,
-		CreatedAt:     order.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:              order.ID.String(),
+		TotalAmount:     order.TotalAmount,
+		Status:          string(order.Status),
+		PaymentMethod:   order.PaymentMethod,
+		CreatedAt:       order.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		Address: dto.AddressDTO{
 			FullName: order.FullName,
 			Mobile:   order.Mobile,
@@ -71,13 +71,11 @@ func (c *OrderController) PlaceOrder(ctx *gin.Context) {
 			State:    order.State,
 			Pincode:  order.Pincode,
 		},
-		Items: itemsResp,
+		Items:           itemsResp,
+		RazorpayOrderID: order.RazorpayOrderID,
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{
-		"message": "Order placed successfully",
-		"order":   resp,
-	})
+	ctx.JSON(http.StatusCreated, resp)
 }
 
 // GetUserOrders returns all orders for the authenticated user
@@ -114,11 +112,11 @@ func (c *OrderController) GetUserOrders(ctx *gin.Context) {
 			})
 		}
 		respList = append(respList, dto.OrderResponse{
-			ID:            order.ID.String(),
-			TotalAmount:   order.TotalAmount,
-			Status:        string(order.Status),
-			PaymentMethod: order.PaymentMethod,
-			CreatedAt:     order.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			ID:              order.ID.String(),
+			TotalAmount:     order.TotalAmount,
+			Status:          string(order.Status),
+			PaymentMethod:   order.PaymentMethod,
+			CreatedAt:       order.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 			Address: dto.AddressDTO{
 				FullName: order.FullName,
 				Mobile:   order.Mobile,
@@ -128,7 +126,8 @@ func (c *OrderController) GetUserOrders(ctx *gin.Context) {
 				State:    order.State,
 				Pincode:  order.Pincode,
 			},
-			Items: itemsResp,
+			Items:           itemsResp,
+			RazorpayOrderID: order.RazorpayOrderID,
 		})
 	}
 

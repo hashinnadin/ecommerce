@@ -67,6 +67,22 @@ function Payment() {
     return Object.keys(err).length === 0;
   };
 
+  const validatePayment = () => {
+    if (paymentMethod === "COD") return true;
+    
+    let err = {};
+    if (paymentMethod === "card") {
+      if (!formData.cardNumber || formData.cardNumber.length !== 16) err.cardNumber = "Must be 16 digits";
+      if (!formData.expiryDate || formData.expiryDate.length !== 5 || !formData.expiryDate.includes("/")) err.expiryDate = "Use MM/YY format";
+      if (!formData.cvv || (formData.cvv.length !== 3 && formData.cvv.length !== 4)) err.cvv = "Must be 3 or 4 digits";
+    } else if (paymentMethod === "upi") {
+      if (!formData.upiId || !formData.upiId.includes("@")) err.upiId = "Invalid UPI ID";
+    }
+    
+    setErrors(err);
+    return Object.keys(err).length === 0;
+  };
+
   const handleNextStep = () => {
     if (validateAddress()) setStep(2);
     else toast.error("Please check address details");
@@ -74,6 +90,10 @@ function Payment() {
 
   const handlePayment = async (e) => {
     e.preventDefault();
+    if (!validatePayment()) {
+      toast.error("Please fill payment details correctly");
+      return;
+    }
     setLoading(true);
     try {
       // 1. Create Order in Backend (Returns Razorpay Order ID if online)
@@ -237,14 +257,30 @@ function Payment() {
 
                   {paymentMethod === "card" ? (
                     <div className="space-y-6 bg-gray-50 p-8 rounded-[2rem] border border-gray-100">
-                      <div className="space-y-1"><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Card Number</label><input name="cardNumber" value={formData.cardNumber} onChange={handlePaymentInput} placeholder="0000 0000 0000 0000" className="w-full px-6 py-4 bg-white rounded-2xl border-none focus:ring-4 focus:ring-rose-100 transition-all shadow-sm" /></div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Card Number</label>
+                        <input name="cardNumber" value={formData.cardNumber} onChange={handlePaymentInput} maxLength="16" placeholder="0000 0000 0000 0000" className={`w-full px-6 py-4 bg-white rounded-2xl border-none focus:ring-4 ${errors.cardNumber ? "ring-4 ring-rose-100" : "focus:ring-rose-100"} transition-all shadow-sm`} />
+                        {errors.cardNumber && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.cardNumber}</p>}
+                      </div>
                       <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-1"><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Expiry</label><input name="expiryDate" value={formData.expiryDate} onChange={handlePaymentInput} placeholder="MM/YY" className="w-full px-6 py-4 bg-white rounded-2xl border-none focus:ring-4 focus:ring-rose-100 transition-all shadow-sm" /></div>
-                        <div className="space-y-1"><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">CVV</label><input name="cvv" value={formData.cvv} onChange={handlePaymentInput} placeholder="***" className="w-full px-6 py-4 bg-white rounded-2xl border-none focus:ring-4 focus:ring-rose-100 transition-all shadow-sm" /></div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Expiry</label>
+                          <input name="expiryDate" value={formData.expiryDate} onChange={handlePaymentInput} maxLength="5" placeholder="MM/YY" className={`w-full px-6 py-4 bg-white rounded-2xl border-none focus:ring-4 ${errors.expiryDate ? "ring-4 ring-rose-100" : "focus:ring-rose-100"} transition-all shadow-sm`} />
+                          {errors.expiryDate && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.expiryDate}</p>}
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">CVV</label>
+                          <input name="cvv" value={formData.cvv} onChange={handlePaymentInput} maxLength="4" placeholder="***" className={`w-full px-6 py-4 bg-white rounded-2xl border-none focus:ring-4 ${errors.cvv ? "ring-4 ring-rose-100" : "focus:ring-rose-100"} transition-all shadow-sm`} />
+                          {errors.cvv && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.cvv}</p>}
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-1 bg-gray-50 p-8 rounded-[2rem] border border-gray-100"><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">UPI ID</label><input name="upiId" value={formData.upiId} onChange={handlePaymentInput} placeholder="user@bank" className="w-full px-6 py-4 bg-white rounded-2xl border-none focus:ring-4 focus:ring-rose-100 transition-all shadow-sm" /></div>
+                    <div className="space-y-1 bg-gray-50 p-8 rounded-[2rem] border border-gray-100">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">UPI ID</label>
+                      <input name="upiId" value={formData.upiId} onChange={handlePaymentInput} placeholder="user@bank" className={`w-full px-6 py-4 bg-white rounded-2xl border-none focus:ring-4 ${errors.upiId ? "ring-4 ring-rose-100" : "focus:ring-rose-100"} transition-all shadow-sm`} />
+                      {errors.upiId && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.upiId}</p>}
+                    </div>
                   )}
                   <button onClick={handlePayment} disabled={loading} className="w-full py-5 bg-rose-500 text-white rounded-2xl font-black text-lg shadow-xl hover:bg-rose-600 hover:-translate-y-1 transition-all disabled:opacity-50">Complete Secure Payment</button>
                 </div>
