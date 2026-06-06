@@ -10,11 +10,12 @@ import (
 type OrderStatus string
 
 const (
-	StatusPending   OrderStatus = "PENDING"
-	StatusPaid      OrderStatus = "PAID"
-	StatusShipped   OrderStatus = "SHIPPED"
-	StatusDelivered OrderStatus = "DELIVERED"
-	StatusCancelled OrderStatus = "CANCELLED"
+	StatusPending    OrderStatus = "PENDING"
+	StatusProcessing OrderStatus = "PROCESSING"
+	StatusPaid       OrderStatus = "PAID"
+	StatusShipped    OrderStatus = "SHIPPED"
+	StatusDelivered  OrderStatus = "DELIVERED"
+	StatusCancelled  OrderStatus = "CANCELLED"
 )
 
 type Order struct {
@@ -22,6 +23,8 @@ type Order struct {
 	UserID      uuid.UUID   `gorm:"type:uuid;not null;index" json:"user_id"`
 	User        User        `gorm:"foreignKey:UserID" json:"-"`
 	Items       []OrderItem `gorm:"foreignKey:OrderID" json:"items"`
+	Subtotal    int64       `gorm:"not null" json:"subtotal"`
+	DeliveryFee int64       `gorm:"not null;default:0" json:"delivery_fee"`
 	TotalAmount int64       `gorm:"not null" json:"total_amount"`
 	Status      OrderStatus `gorm:"type:varchar(20);default:'PENDING'" json:"status"`
 	

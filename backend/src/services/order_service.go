@@ -23,6 +23,18 @@ func NewOrderService(repo repository.PgSQLRepository, cartService *CartService, 
 	}
 }
 
+const (
+	deliveryFeeThreshold int64 = 999
+	deliveryFeeAmount    int64 = 99
+)
+
+func calculateDeliveryFee(subtotal int64) int64 {
+	if subtotal >= deliveryFeeThreshold {
+		return 0
+	}
+	return deliveryFeeAmount
+}
+
 // PlaceOrder converts a user's cart into an order
 func (s *OrderService) PlaceOrder(userID uuid.UUID, req *dto.PlaceOrderRequest) (*schema.Order, error) {
 	// 1. Fetch Cart
@@ -39,10 +51,10 @@ func (s *OrderService) PlaceOrder(userID uuid.UUID, req *dto.PlaceOrderRequest) 
 
 	// 2. Start Transaction
 	err = s.Repo.Transaction(func(txRepo repository.PgSQLRepository) error {
-		var totalAmount int64
+		// Calculate subtotal, check stock, and prepare order items
+		var subtotal int64
 		var orderItems []schema.OrderItem
 
-		// Calculate total, check stock, and prepare order items
 		for _, item := range cart.Items {
 			// Fetch fresh product info for stock validation using txRepo
 			var product schema.Product
@@ -62,7 +74,7 @@ func (s *OrderService) PlaceOrder(userID uuid.UUID, req *dto.PlaceOrderRequest) 
 
 			// Calculate item price
 			itemTotal := product.Price * int64(item.Quantity)
-			totalAmount += itemTotal
+			subtotal += itemTotal
 
 			orderItems = append(orderItems, schema.OrderItem{
 				ProductID: product.ID,
@@ -71,10 +83,15 @@ func (s *OrderService) PlaceOrder(userID uuid.UUID, req *dto.PlaceOrderRequest) 
 			})
 		}
 
+		deliveryFee := calculateDeliveryFee(subtotal)
+		grandTotal := subtotal + deliveryFee
+
 		// 3. Create Order
 		newOrder = schema.Order{
 			UserID:        userID,
-			TotalAmount:   totalAmount,
+			Subtotal:      subtotal,
+			DeliveryFee:   deliveryFee,
+			TotalAmount:   grandTotal,
 			Status:        schema.StatusPending,
 			PaymentMethod: req.PaymentMethod,
 			FullName:      req.Address.FullName,
@@ -84,6 +101,10 @@ func (s *OrderService) PlaceOrder(userID uuid.UUID, req *dto.PlaceOrderRequest) 
 			City:          req.Address.City,
 			State:         req.Address.State,
 			Pincode:       req.Address.Pincode,
+		}
+
+		if req.PaymentMethod == "COD" {
+			newOrder.Status = schema.StatusProcessing
 		}
 
 		if err := txRepo.Insert(&newOrder); err != nil {
@@ -113,12 +134,12 @@ func (s *OrderService) PlaceOrder(userID uuid.UUID, req *dto.PlaceOrderRequest) 
 
 		// 6. Integrate Razorpay if Payment Method is Online
 		if req.PaymentMethod != "COD" {
-			razorpayOrderID, err := s.PaymentService.CreateRazorpayOrder(totalAmount, newOrder.ID.String())
+			razorpayOrderID, err := s.PaymentService.CreateRazorpayOrder(grandTotal, newOrder.ID.String())
 			if err != nil {
 				return err
 			}
 			newOrder.RazorpayOrderID = razorpayOrderID
-			
+
 			// Save the Razorpay Order ID to our order record
 			if err := txRepo.GetDB().Model(&newOrder).Update("razorpay_order_id", razorpayOrderID).Error; err != nil {
 				return err
@@ -159,6 +180,19 @@ func (s *OrderService) GetUserOrders(userID uuid.UUID) ([]schema.Order, error) {
 	return orders, err
 }
 
+// GetUserOrderByID retrieves a single order for a user (ownership enforced)
+func (s *OrderService) GetUserOrderByID(userID, orderID uuid.UUID) (*schema.Order, error) {
+	var order schema.Order
+	err := s.Repo.GetDB().
+		Preload("Items.Product").
+		Where("id = ? AND user_id = ?", orderID, userID).
+		First(&order).Error
+	if err != nil {
+		return nil, errors.New("order not found")
+	}
+	return &order, nil
+}
+
 // GetAllOrders retrieves all orders (for admin)
 func (s *OrderService) GetAllOrders() ([]schema.Order, error) {
 	var orders []schema.Order
@@ -180,7 +214,7 @@ func (s *OrderService) UpdateOrderStatus(orderID uuid.UUID, status string) error
 			return err
 		}
 
-		if status == "SUCCESS" {
+		if status == "PAID" || status == "SUCCESS" {
 			// Clear the user's cart after successful payment
 			if err := s.CartService.WithRepo(txRepo).ClearCart(order.UserID); err != nil {
 				return err

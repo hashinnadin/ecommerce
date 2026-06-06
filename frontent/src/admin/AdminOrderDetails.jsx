@@ -64,6 +64,7 @@ function AdminOrderDetails() {
 
   if (!order) return null;
   const color = getStatusColor(order.status);
+  const currentStatus = (order.status || "").toLowerCase();
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] flex">
@@ -107,7 +108,13 @@ function AdminOrderDetails() {
                     </div>
                     <h2 className="text-2xl font-black text-gray-900 tracking-tight">Ordered Masterpieces</h2>
                   </div>
-                  <div className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border bg-${color}-50 text-${color}-600 border-${color}-100 shadow-sm animate-pulse`}>
+                  <div className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border shadow-sm animate-pulse ${
+                    color === "emerald" ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                    color === "blue" ? "bg-blue-50 text-blue-600 border-blue-100" :
+                    color === "rose" ? "bg-rose-50 text-rose-600 border-rose-100" :
+                    color === "amber" ? "bg-amber-50 text-amber-600 border-amber-100" :
+                    "bg-gray-50 text-gray-600 border-gray-100"
+                  }`}>
                     {order.status || "processing"}
                   </div>
               </div>
@@ -168,34 +175,34 @@ function AdminOrderDetails() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <button
-                  disabled={updating || order.status === "processing"}
+                  disabled={updating || currentStatus === "processing"}
                   onClick={() => updateStatus("processing")}
-                  className={`group p-8 rounded-[2.5rem] border-2 transition-all flex flex-col items-center gap-4 ${order.status === "processing" ? "border-amber-500 bg-amber-50/50" : "border-gray-100 hover:border-amber-200"}`}
+                  className={`group p-8 rounded-[2.5rem] border-2 transition-all flex flex-col items-center gap-4 ${currentStatus === "processing" ? "border-amber-500 bg-amber-50/50" : "border-gray-100 hover:border-amber-200"}`}
                 >
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${order.status === "processing" ? "bg-amber-500 text-white" : "bg-gray-100 text-gray-400"}`}><Clock /></div>
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${currentStatus === "processing" ? "bg-amber-500 text-white" : "bg-gray-100 text-gray-400"}`}><Clock /></div>
                   <span className="font-black text-xs uppercase tracking-widest">Mark Processing</span>
                 </button>
                 <button
-                  disabled={updating || order.status === "shipped"}
+                  disabled={updating || currentStatus === "shipped"}
                   onClick={() => updateStatus("shipped")}
-                  className={`group p-8 rounded-[2.5rem] border-2 transition-all flex flex-col items-center gap-4 ${order.status === "shipped" ? "border-blue-500 bg-blue-50/50" : "border-gray-100 hover:border-blue-200"}`}
+                  className={`group p-8 rounded-[2.5rem] border-2 transition-all flex flex-col items-center gap-4 ${currentStatus === "shipped" ? "border-blue-500 bg-blue-50/50" : "border-gray-100 hover:border-blue-200"}`}
                 >
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${order.status === "shipped" ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-400"}`}><Truck /></div>
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${currentStatus === "shipped" ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-400"}`}><Truck /></div>
                   <span className="font-black text-xs uppercase tracking-widest">Mark Shipped</span>
                 </button>
                 <button
-                  disabled={updating || order.status === "success"}
+                  disabled={updating || currentStatus === "success" || currentStatus === "delivered"}
                   onClick={() => updateStatus("success")}
-                  className={`group p-8 rounded-[2.5rem] border-2 transition-all flex flex-col items-center gap-4 ${order.status === "success" ? "border-emerald-500 bg-emerald-50/50" : "border-gray-100 hover:border-emerald-200"}`}
+                  className={`group p-8 rounded-[2.5rem] border-2 transition-all flex flex-col items-center gap-4 ${(currentStatus === "success" || currentStatus === "delivered") ? "border-emerald-500 bg-emerald-50/50" : "border-gray-100 hover:border-emerald-200"}`}
                 >
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${order.status === "success" ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-400"}`}><CheckCircle /></div>
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${(currentStatus === "success" || currentStatus === "delivered") ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-400"}`}><CheckCircle /></div>
                   <span className="font-black text-xs uppercase tracking-widest">Mark Delivered</span>
                 </button>
               </div>
               
               <div className="mt-8 flex justify-end">
                 <button 
-                  disabled={updating || order.status === "canceled"}
+                  disabled={updating || currentStatus === "canceled" || currentStatus === "cancelled"}
                   onClick={() => updateStatus("canceled")}
                   className="flex items-center gap-2 text-[10px] font-black text-rose-300 hover:text-rose-500 transition-all uppercase tracking-widest px-4 py-2"
                 >

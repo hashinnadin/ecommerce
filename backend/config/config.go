@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 
 	"myapp/src/schema"
 
@@ -20,6 +21,7 @@ func LoadConfig() *schema.Config {
 	cfg := &schema.Config{}
 
 	cfg.Server.Port = getEnv("SERVER_PORT", "8080")
+	cfg.Server.AllowedOrigins = getEnvList("CORS_ORIGINS", []string{"http://localhost:5173", "http://127.0.0.1:5173"})
 
 	//database
 	cfg.DB.Host = getEnv("DB_HOST", "127.0.0.1")
@@ -66,6 +68,22 @@ func getEnvAsInt(key string, defaultValue int) int {
 	if value := os.Getenv(key); value != "" {
 		if intValue, err := strconv.Atoi(value); err == nil {
 			return intValue
+		}
+	}
+	return defaultValue
+}
+
+func getEnvList(key string, defaultValue []string) []string {
+	if value := os.Getenv(key); value != "" {
+		parts := strings.Split(value, ",")
+		result := make([]string, 0, len(parts))
+		for _, p := range parts {
+			if trimmed := strings.TrimSpace(p); trimmed != "" {
+				result = append(result, trimmed)
+			}
+		}
+		if len(result) > 0 {
+			return result
 		}
 	}
 	return defaultValue

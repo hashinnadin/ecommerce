@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { CreditCard, Smartphone, ArrowLeft, CheckCircle2, Truck, ShieldCheck, MapPin, Package, ChevronRight, Info } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { CreditCard, CheckCircle2, Truck, ShieldCheck, ChevronRight, Info } from "lucide-react";
+import { motion } from "framer-motion";
 
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -14,18 +14,16 @@ function Payment() {
   const { user } = useAuth();
   const { cartItems, clearCart } = useCart();
 
-  const [paymentMethod, setPaymentMethod] = useState("card");
+  const [paymentMethod, setPaymentMethod] = useState("online");
   const [loading, setLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
-  const [step, setStep] = useState(1); // 1: Address, 2: Payment
+  const [step, setStep] = useState(1);
 
   const [address, setAddress] = useState({
     fullName: "", mobile: "", house: "", street: "", city: "", pincode: "", state: "",
   });
 
-  const [errors, setErrors] = useState({});
   const [addressErrors, setAddressErrors] = useState({});
-  const [formData, setFormData] = useState({ cardNumber: "", expiryDate: "", cvv: "", nameOnCard: "", upiId: "" });
 
   useEffect(() => {
     if (!user) { navigate("/login"); return; }
@@ -35,7 +33,9 @@ function Payment() {
       try {
         const res = await API.get("/user/profile");
         if (res.data.address) setAddress(res.data.address);
-      } catch (error) { console.error(error); }
+      } catch {
+        // profile load is optional
+      }
     })();
   }, [user, cartItems, navigate, orderSuccess]);
 
@@ -47,12 +47,6 @@ function Payment() {
     const { name, value } = e.target;
     setAddress({ ...address, [name]: value });
     if (addressErrors[name]) setAddressErrors({ ...addressErrors, [name]: null });
-  };
-
-  const handlePaymentInput = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    if (errors[name]) setErrors({ ...errors, [name]: null });
   };
 
   const validateAddress = () => {
@@ -67,36 +61,58 @@ function Payment() {
     return Object.keys(err).length === 0;
   };
 
-  const validatePayment = () => {
-    if (paymentMethod === "COD") return true;
-    
-    let err = {};
-    if (paymentMethod === "card") {
-      if (!formData.cardNumber || formData.cardNumber.length !== 16) err.cardNumber = "Must be 16 digits";
-      if (!formData.expiryDate || formData.expiryDate.length !== 5 || !formData.expiryDate.includes("/")) err.expiryDate = "Use MM/YY format";
-      if (!formData.cvv || (formData.cvv.length !== 3 && formData.cvv.length !== 4)) err.cvv = "Must be 3 or 4 digits";
-    } else if (paymentMethod === "upi") {
-      if (!formData.upiId || !formData.upiId.includes("@")) err.upiId = "Invalid UPI ID";
-    }
-    
-    setErrors(err);
-    return Object.keys(err).length === 0;
-  };
-
   const handleNextStep = () => {
     if (validateAddress()) setStep(2);
     else toast.error("Please check address details");
   };
 
+  const openRazorpayCheckout = (orderData) => {
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+      currency: "INR",
+      name: "Artisan Bakery",
+      description: "Order Payment",
+      order_id: orderData.razorpay_order_id,
+      handler: async function (response) {
+        try {
+          await API.post("/user/payment/verify", {
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            my_order_id: orderData.id,
+          });
+
+          await clearCart();
+          setOrderSuccess(true);
+          setTimeout(() => navigate("/orders"), 3000);
+        } catch {
+          toast.error("Payment verification failed!");
+          setLoading(false);
+        }
+      },
+      prefill: {
+        name: address.fullName,
+        email: user?.email,
+        contact: address.mobile,
+      },
+      theme: { color: "#f43f5e" },
+      modal: {
+        ondismiss: () => setLoading(false),
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.on("payment.failed", () => {
+      toast.error("Payment failed. Please try again.");
+      setLoading(false);
+    });
+    rzp.open();
+  };
+
   const handlePayment = async (e) => {
     e.preventDefault();
-    if (!validatePayment()) {
-      toast.error("Please fill payment details correctly");
-      return;
-    }
     setLoading(true);
     try {
-      // 1. Create Order in Backend (Returns Razorpay Order ID if online)
       const res = await API.post("/user/orders", { paymentMethod, address });
       const orderData = res.data;
 
@@ -107,48 +123,13 @@ function Payment() {
         return;
       }
 
-      // 2. Razorpay Payment
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_your_key", // Fallback for safety
-        amount: total * 100,
-        currency: "INR",
-        name: "Artisan Bakery",
-        description: "Order Payment",
-        order_id: orderData.razorpay_order_id,
-        handler: async function (response) {
-          try {
-            // 3. Verify Payment on Backend
-            await API.post("/user/payment/verify", {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              my_order_id: orderData.id
-            });
-            
-            await clearCart();
-            setOrderSuccess(true);
-            setTimeout(() => navigate("/orders"), 3000);
-          } catch (error) {
-            toast.error("Payment verification failed!");
-          }
-        },
-        prefill: {
-          name: address.fullName,
-          email: user?.email,
-          contact: address.mobile
-        },
-        theme: {
-          color: "#f43f5e" // rose-500
-        },
-        modal: {
-          ondismiss: function() {
-            setLoading(false);
-          }
-        }
-      };
+      if (!orderData.razorpay_order_id) {
+        toast.error("Could not initiate payment. Please try again.");
+        setLoading(false);
+        return;
+      }
 
-      const rzp1 = new window.Razorpay(options);
-      rzp1.open();
+      openRazorpayCheckout(orderData);
     } catch (error) {
       toast.error(error.response?.data?.error || "Failed to create order");
       setLoading(false);
@@ -182,7 +163,6 @@ function Payment() {
 
         <div className="grid lg:grid-cols-3 gap-12 items-start">
           <div className="lg:col-span-2 space-y-8">
-            {/* 🔹 STEP 1: ADDRESS */}
             <div className={`bg-white rounded-[2.5rem] p-8 shadow-premium border transition-all ${step === 1 ? "border-rose-500 ring-4 ring-rose-50" : "border-gray-50 opacity-60"}`}>
               <div className="flex items-center gap-4 mb-8">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black ${step === 1 ? "bg-rose-500 text-white" : "bg-gray-100 text-gray-400"}`}>1</div>
@@ -231,7 +211,6 @@ function Payment() {
               )}
             </div>
 
-            {/* 🔹 STEP 2: PAYMENT */}
             <div className={`bg-white rounded-[2.5rem] p-8 shadow-premium border transition-all ${step === 2 ? "border-rose-500 ring-4 ring-rose-50" : "border-gray-50 opacity-60"}`}>
               <div className="flex items-center gap-4 mb-8">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black ${step === 2 ? "bg-rose-500 text-white" : "bg-gray-100 text-gray-400"}`}>2</div>
@@ -240,49 +219,34 @@ function Payment() {
 
               {step === 2 && (
                 <div className="space-y-8">
-                  <div className="grid grid-cols-3 gap-4">
-                    <button onClick={() => setPaymentMethod("card")} className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-4 ${paymentMethod === "card" ? "border-rose-500 bg-rose-50/50" : "border-gray-100 hover:border-rose-100"}`}>
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${paymentMethod === "card" ? "bg-rose-500 text-white" : "bg-gray-100 text-gray-400"}`}><CreditCard /></div>
-                      <span className="font-black text-[10px] uppercase tracking-widest">Online</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button type="button" onClick={() => setPaymentMethod("online")} className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-4 ${paymentMethod === "online" ? "border-rose-500 bg-rose-50/50" : "border-gray-100 hover:border-rose-100"}`}>
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${paymentMethod === "online" ? "bg-rose-500 text-white" : "bg-gray-100 text-gray-400"}`}><CreditCard /></div>
+                      <span className="font-black text-[10px] uppercase tracking-widest">Pay Online</span>
                     </button>
-                    <button onClick={() => setPaymentMethod("upi")} className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-4 ${paymentMethod === "upi" ? "border-rose-500 bg-rose-50/50" : "border-gray-100 hover:border-rose-100"}`}>
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${paymentMethod === "upi" ? "bg-rose-500 text-white" : "bg-gray-100 text-gray-400"}`}><Smartphone /></div>
-                      <span className="font-black text-[10px] uppercase tracking-widest">UPI</span>
-                    </button>
-                    <button onClick={() => setPaymentMethod("COD")} className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-4 ${paymentMethod === "COD" ? "border-rose-500 bg-rose-50/50" : "border-gray-100 hover:border-rose-100"}`}>
+                    <button type="button" onClick={() => setPaymentMethod("COD")} className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-4 ${paymentMethod === "COD" ? "border-rose-500 bg-rose-50/50" : "border-gray-100 hover:border-rose-100"}`}>
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${paymentMethod === "COD" ? "bg-rose-500 text-white" : "bg-gray-100 text-gray-400"}`}><Truck /></div>
-                      <span className="font-black text-[10px] uppercase tracking-widest">COD</span>
+                      <span className="font-black text-[10px] uppercase tracking-widest">Cash on Delivery</span>
                     </button>
                   </div>
 
-                  {paymentMethod === "card" ? (
-                    <div className="space-y-6 bg-gray-50 p-8 rounded-[2rem] border border-gray-100">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Card Number</label>
-                        <input name="cardNumber" value={formData.cardNumber} onChange={handlePaymentInput} maxLength="16" placeholder="0000 0000 0000 0000" className={`w-full px-6 py-4 bg-white rounded-2xl border-none focus:ring-4 ${errors.cardNumber ? "ring-4 ring-rose-100" : "focus:ring-rose-100"} transition-all shadow-sm`} />
-                        {errors.cardNumber && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.cardNumber}</p>}
-                      </div>
-                      <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Expiry</label>
-                          <input name="expiryDate" value={formData.expiryDate} onChange={handlePaymentInput} maxLength="5" placeholder="MM/YY" className={`w-full px-6 py-4 bg-white rounded-2xl border-none focus:ring-4 ${errors.expiryDate ? "ring-4 ring-rose-100" : "focus:ring-rose-100"} transition-all shadow-sm`} />
-                          {errors.expiryDate && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.expiryDate}</p>}
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">CVV</label>
-                          <input name="cvv" value={formData.cvv} onChange={handlePaymentInput} maxLength="4" placeholder="***" className={`w-full px-6 py-4 bg-white rounded-2xl border-none focus:ring-4 ${errors.cvv ? "ring-4 ring-rose-100" : "focus:ring-rose-100"} transition-all shadow-sm`} />
-                          {errors.cvv && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.cvv}</p>}
-                        </div>
+                  {paymentMethod === "online" ? (
+                    <div className="bg-gray-50 p-8 rounded-[2rem] border border-gray-100 flex gap-4 items-start">
+                      <ShieldCheck className="text-rose-500 shrink-0" size={24} />
+                      <div>
+                        <p className="font-black text-gray-900 mb-1">Secure payment via Razorpay</p>
+                        <p className="text-sm text-gray-500 font-medium">Pay with UPI, card, net banking, or wallet. You&apos;ll be redirected to Razorpay&apos;s secure checkout.</p>
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-1 bg-gray-50 p-8 rounded-[2rem] border border-gray-100">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">UPI ID</label>
-                      <input name="upiId" value={formData.upiId} onChange={handlePaymentInput} placeholder="user@bank" className={`w-full px-6 py-4 bg-white rounded-2xl border-none focus:ring-4 ${errors.upiId ? "ring-4 ring-rose-100" : "focus:ring-rose-100"} transition-all shadow-sm`} />
-                      {errors.upiId && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.upiId}</p>}
+                    <div className="bg-gray-50 p-8 rounded-[2rem] border border-gray-100">
+                      <p className="text-sm text-gray-500 font-medium">Pay ₹{total} in cash when your order is delivered.</p>
                     </div>
                   )}
-                  <button onClick={handlePayment} disabled={loading} className="w-full py-5 bg-rose-500 text-white rounded-2xl font-black text-lg shadow-xl hover:bg-rose-600 hover:-translate-y-1 transition-all disabled:opacity-50">Complete Secure Payment</button>
+
+                  <button onClick={handlePayment} disabled={loading} className="w-full py-5 bg-rose-500 text-white rounded-2xl font-black text-lg shadow-xl hover:bg-rose-600 hover:-translate-y-1 transition-all disabled:opacity-50">
+                    {loading ? "Processing..." : paymentMethod === "COD" ? "Place Order" : "Pay Securely"}
+                  </button>
                 </div>
               )}
             </div>

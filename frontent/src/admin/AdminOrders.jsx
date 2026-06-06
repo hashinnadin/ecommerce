@@ -41,7 +41,8 @@ function AdminOrders() {
 
   const getStatusColor = (status = "") => {
     const s = status.toLowerCase();
-    if (s.includes("succ") || s.includes("deliv")) return "emerald";
+    if (s.includes("succ") || s.includes("deliv") || s.includes("paid")) return "emerald";
+    if (s.includes("ship")) return "blue";
     if (s.includes("pend") || s.includes("proc")) return "amber";
     if (s.includes("can")) return "rose";
     return "gray";
@@ -117,7 +118,13 @@ function AdminOrders() {
                           <h3 className="font-black text-gray-900 text-xl tracking-tight">#{order.id.toString().slice(-8).toUpperCase()}</h3>
                         </div>
                       </div>
-                      <div className={`px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border bg-${color}-50 text-${color}-600 border-${color}-100 shadow-sm`}>
+                      <div className={`px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border shadow-sm ${
+                        color === "emerald" ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                        color === "blue" ? "bg-blue-50 text-blue-600 border-blue-100" :
+                        color === "rose" ? "bg-rose-50 text-rose-600 border-rose-100" :
+                        color === "amber" ? "bg-amber-50 text-amber-600 border-amber-100" :
+                        "bg-gray-50 text-gray-600 border-gray-100"
+                      }`}>
                         {order.status || "processing"}
                       </div>
                     </div>

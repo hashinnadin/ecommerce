@@ -50,7 +50,6 @@ function Home() {
       try {
         setLoading(true);
         const res = await API.get("/products");
-        console.log("Home Products fetched:", res.data);
         setProducts(res.data.products || res.data || []);
       } catch (error) {
         console.error("Failed to fetch products:", error);

@@ -52,7 +52,7 @@ func (c *PaymentController) VerifyPayment(ctx *gin.Context) {
 	// Update order status to PAID/SUCCESS
 	// We'll use AdminService or OrderService to update the status.
 	// Actually, let's just use the repo here or add a method to OrderService.
-	if err := c.OrderService.UpdateOrderStatus(orderID, "SUCCESS"); err != nil {
+	if err := c.OrderService.UpdateOrderStatus(orderID, "PAID"); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update order status"})
 		return
 	}

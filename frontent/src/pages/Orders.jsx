@@ -159,7 +159,12 @@ function Orders() {
                                     <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-1">Total Amount</p>
                                     <p className="text-4xl font-black text-gray-900 leading-none">₹{order.total_amount || order.totalAmount}</p>
                                 </div>
-                                <div className={`px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 bg-${status.color}-50 text-${status.color}-500 shadow-sm border border-${status.color}-100`}>
+                                <div className={`px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 shadow-sm border ${
+                                  status.color === "emerald" ? "bg-emerald-50 text-emerald-500 border-emerald-100" :
+                                  status.color === "blue" ? "bg-blue-50 text-blue-500 border-blue-100" :
+                                  status.color === "rose" ? "bg-rose-50 text-rose-500 border-rose-100" :
+                                  "bg-amber-50 text-amber-500 border-amber-100"
+                                }`}>
                                     <StatusIcon size={14} /> {status.label}
                                 </div>
                             </div>
@@ -175,7 +180,12 @@ function Orders() {
                                     initial={{ width: 0 }}
                                     animate={{ width: `${status.progress}%` }}
                                     transition={{ duration: 1, delay: i * 0.2 }}
-                                    className={`absolute top-0 left-0 h-full bg-${status.color}-500 shadow-[0_0_20px_rgba(0,0,0,0.1)]`}
+                                    className={`absolute top-0 left-0 h-full shadow-[0_0_20px_rgba(0,0,0,0.1)] ${
+                                      status.color === "emerald" ? "bg-emerald-500" :
+                                      status.color === "blue" ? "bg-blue-500" :
+                                      status.color === "rose" ? "bg-rose-500" :
+                                      "bg-amber-500"
+                                    }`}
                                 />
                             </div>
                             <div className="flex justify-between mt-4">

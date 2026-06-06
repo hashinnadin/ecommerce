@@ -71,6 +71,7 @@ func SetUpRoutes(
 	{
 		orders.POST("", orderController.PlaceOrder)
 		orders.GET("", orderController.GetUserOrders)
+		orders.GET("/:id", orderController.GetUserOrderByID)
 	}
 
 	user.POST("/payment/verify", paymentController.VerifyPayment)

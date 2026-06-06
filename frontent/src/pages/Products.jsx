@@ -39,7 +39,6 @@ function Products() {
       setLoading(true);
       const res = await API.get("/products");
       const data = res.data.products || res.data || [];
-      console.log("Products Page data:", data);
       setProducts(data);
       const uniqueCategories = [...new Set(data.map(item => item.category).filter(Boolean))];
       setCategories(uniqueCategories);

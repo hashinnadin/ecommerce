@@ -14,9 +14,11 @@ type PlaceOrderRequest struct {
 }
 type OrderResponse struct {
 	ID            string              `json:"id"`
+	Subtotal      int64               `json:"subtotal"`
+	DeliveryFee   int64               `json:"delivery_fee"`
 	TotalAmount   int64               `json:"total_amount"`
 	Status        string              `json:"status"`
-	PaymentMethod string              `json:"paymentMethod"`
+	PaymentMethod string              `json:"payment_method"`
 	CreatedAt     string              `json:"created_at"`
 	Address       AddressDTO          `json:"address"`
 	Items         []OrderItemResponse `json:"items"`

@@ -2,7 +2,8 @@ package schema
 
 type Config struct {
 	Server struct {
-		Port string
+		Port          string
+		AllowedOrigins []string
 	}
 	DB struct {
 		Host     string

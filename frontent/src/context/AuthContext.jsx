@@ -1,25 +1,65 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import API from "../api";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
 
-  const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem("user");
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
-  const [admin, setAdmin] = useState(() => {
-    const storedAdmin = localStorage.getItem("admin");
-    return storedAdmin ? JSON.parse(storedAdmin) : null;
-  });
-  const [loading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [admin, setAdmin] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // 🔹 USER LOGIN
+  useEffect(() => {
+    const validateSession = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await API.get("/user/dashboard", {
+          headers: { "X-Session-Check": "true" },
+        });
+        const role = res.data.role;
+
+        if (role === "admin") {
+          const storedAdmin = localStorage.getItem("admin");
+          setAdmin(
+            storedAdmin
+              ? JSON.parse(storedAdmin)
+              : { role: "admin", name: res.data.name, id: res.data.user_id }
+          );
+          setUser(null);
+        } else {
+          const storedUser = localStorage.getItem("user");
+          const userData = storedUser ? JSON.parse(storedUser) : {};
+          setUser({
+            ...userData,
+            id: res.data.user_id,
+            name: res.data.name,
+            role: res.data.role,
+          });
+          setAdmin(null);
+        }
+      } catch {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("admin");
+        setUser(null);
+        setAdmin(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    validateSession();
+  }, []);
+
   const loginUser = (userData, token, redirectPath = "/") => {
-    // Don't store password in localStorage
     const { password: _, ...safeUserData } = userData;
     localStorage.setItem("user", JSON.stringify(safeUserData));
     if (token) {
@@ -34,7 +74,6 @@ export const AuthProvider = ({ children }) => {
     navigate(redirectPath);
   };
 
-  // 🔹 ADMIN LOGIN
   const loginAdmin = (adminData, token, redirectPath = "/admin") => {
     localStorage.setItem("admin", JSON.stringify(adminData));
     if (token) {
@@ -49,7 +88,6 @@ export const AuthProvider = ({ children }) => {
     navigate(redirectPath);
   };
 
-  // 🔹 LOGOUT
   const logout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("admin");

@@ -109,7 +109,21 @@ func (s *AdminService) UpdateOrderStatus(orderID uuid.UUID, status string) error
 		return errors.New("order not found")
 	}
 
-	return s.Repo.GetDB().Model(&order).Update("status", status).Error
+	var normalizedStatus string
+	switch status {
+	case "processing":
+		normalizedStatus = string(schema.StatusProcessing)
+	case "shipped":
+		normalizedStatus = string(schema.StatusShipped)
+	case "success":
+		normalizedStatus = string(schema.StatusDelivered)
+	case "canceled":
+		normalizedStatus = string(schema.StatusCancelled)
+	default:
+		normalizedStatus = status
+	}
+
+	return s.Repo.GetDB().Model(&order).Update("status", normalizedStatus).Error
 }
 
 func (s *AdminService) GetOrderByID(orderID uuid.UUID) (*schema.Order, error) {

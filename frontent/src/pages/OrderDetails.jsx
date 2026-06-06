@@ -19,13 +19,14 @@ function OrderDetails() {
     if (!user) { navigate("/login"); return; }
     (async () => {
       try {
-        const userRes = await API.get(`/user/orders`);
-        const userOrders = userRes.data || [];
-        let found = userOrders.find(o => String(o.id || o.orderId) === String(id));
-        if (!found) { toast.error("Order not found"); navigate("/orders"); return; }
-        setOrder(found);
-      } catch (error) { toast.error("Failed to load details"); }
-      finally { setLoading(false); }
+        const res = await API.get(`/user/orders/${id}`);
+        setOrder(res.data);
+      } catch {
+        toast.error("Failed to load details");
+        navigate("/orders");
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [id, user, navigate]);
 
